@@ -19,6 +19,8 @@ wva:
   
   # If true, the controller will only watch the namespace it is deployed in.
   # If false, the controller will watch all namespaces (cluster-scoped).
+  # Note: When using installMode="controller-only" for multi-model deployments,
+  # set this to false to allow the controller to watch all namespaces.
   namespaceScoped: true
 
   reconcileInterval: 60s

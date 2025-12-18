@@ -29,7 +29,8 @@ Installs only the WVA controller without any model-specific resources. This enab
 helm install wva-controller ./workload-variant-autoscaler \
   -n workload-variant-autoscaler-system \
   --create-namespace \
-  --set installMode=controller-only
+  --set installMode=controller-only \
+  --set wva.namespaceScoped=false
 ```
 
 ### Mode 3: `model-resources-only`
@@ -65,6 +66,7 @@ helm install wva-controller ./workload-variant-autoscaler \
   -n workload-variant-autoscaler-system \
   --create-namespace \
   --set installMode=controller-only \
+  --set wva.namespaceScoped=false \
   --set wva.prometheus.baseURL="https://prometheus:9090"
 
 # Step 2: Deploy Model A resources
@@ -83,6 +85,18 @@ helm install model-b ./workload-variant-autoscaler \
   --set llmd.modelID="mistralai/Mistral-7B-v0.1" \
   --set va.accelerator=A100
 ```
+
+### Important Configuration Notes
+
+**Namespace Scoping:**
+- When using `installMode=controller-only` for multi-model deployments, you must set `wva.namespaceScoped=false` to allow the controller to watch all namespaces.
+- When using `installMode=all` (default), you can keep `wva.namespaceScoped=true` for single-namespace operation or set it to `false` for cluster-wide operation.
+- `installMode=model-resources-only` does not use the `namespaceScoped` setting since it doesn't install the controller.
+
+**Resource Isolation:**
+- Each model's resources (VariantAutoscaling, HPA, Service, ServiceMonitor) are deployed in the model's namespace.
+- The controller remains in its dedicated namespace (typically `workload-variant-autoscaler-system`).
+- Multiple Helm releases can coexist: one for the controller and one per model.
 
 ## Values
 
@@ -105,6 +119,7 @@ helm install model-b ./workload-variant-autoscaler \
 | vllmService.scheme | string | `"http"` |  |
 | wva.enabled | bool | `true` |  |
 | wva.experimentalHybridOptimization | enum | `off` | supports on, off, and model-only |
+| wva.namespaceScoped | bool | `true` | If true, controller watches only its namespace; if false, watches all namespaces (cluster-scoped) |
 | wva.image.repository | string | `"ghcr.io/llm-d-incubation/workload-variant-autoscaler"` |  |
 | wva.image.tag | string | `"latest"` |  |
 | wva.imagePullPolicy | string | `"Always"` |  |

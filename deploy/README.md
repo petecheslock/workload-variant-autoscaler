@@ -219,7 +219,9 @@ The WVA can be deployed as a standalone using Helm, assuming you have:
 - ServiceMonitors configured
 - Prometheus Adapter (optional, for HPA)
 
-This method is particularly useful when there is one (or more) existing llm-d infrastructure deployed
+This method is particularly useful when there is one (or more) existing llm-d infrastructure deployed.
+
+> **New in v0.4.2**: The Helm chart now supports three installation modes (`all`, `controller-only`, `model-resources-only`) to enable flexible multi-model deployments. See the [Helm Chart Installation Modes](#helm-chart-installation-modes) section below for details.
 
 #### Helm Chart Quick Start
 
@@ -529,10 +531,178 @@ spec:
 EOF
 ```
 
+#### Helm Chart Installation Modes
+
+**New in v0.4.2**: The Helm chart supports three installation modes to enable flexible multi-model deployments across multiple namespaces. This addresses the limitation where installing WVA for a new model would overwrite resources from existing models.
+
+##### Mode 1: `all` (Default - Backward Compatible)
+
+Installs both the WVA controller and model-specific resources. This is the traditional mode and maintains backward compatibility.
+
+**Use case**: Single llm-d stack with one model.
+
+```bash
+helm install workload-variant-autoscaler ./charts/workload-variant-autoscaler \
+  -n workload-variant-autoscaler-system \
+  --create-namespace \
+  --set installMode=all  # This is the default
+```
+
+##### Mode 2: `controller-only`
+
+Installs only the WVA controller (Deployment, ServiceAccount, RBAC, ConfigMaps) without any model-specific resources.
+
+**Use case**: Install a cluster-wide controller once, then deploy model-specific resources separately as needed.
+
+```bash
+# Step 1: Install the controller once for the entire cluster
+helm install wva-controller ./charts/workload-variant-autoscaler \
+  -n workload-variant-autoscaler-system \
+  --create-namespace \
+  --set installMode=controller-only \
+  --set wva.namespaceScoped=false \
+  --set wva.prometheus.baseURL="https://prometheus-k8s.monitoring.svc:9090" \
+  --set wva.prometheus.tls.insecureSkipVerify=false
+```
+
+##### Mode 3: `model-resources-only`
+
+Installs only model-specific resources (VariantAutoscaling, HPA, Service, ServiceMonitor) without the controller.
+
+**Use case**: Deploy resources for additional models in different namespaces after a cluster-wide controller is installed.
+
+```bash
+# Step 2a: Deploy model resources for Model A in namespace-a
+helm install model-a-resources ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=llm-d-model-a \
+  --set llmd.modelName=ms-model-a-llm-d-modelservice \
+  --set llmd.modelID="meta-llama/Llama-2-7b-hf" \
+  --set va.accelerator=H100 \
+  --set va.enabled=true \
+  --set hpa.enabled=true \
+  --set vllmService.enabled=true
+
+# Step 2b: Deploy model resources for Model B in namespace-b
+helm install model-b-resources ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=llm-d-model-b \
+  --set llmd.modelName=ms-model-b-llm-d-modelservice \
+  --set llmd.modelID="mistralai/Mistral-7B-v0.1" \
+  --set va.accelerator=A100 \
+  --set va.enabled=true \
+  --set hpa.enabled=true \
+  --set vllmService.enabled=true
+```
+
+##### Complete Multi-Model Example
+
+Here's a complete example showing how to deploy WVA to support multiple llm-d stacks:
+
+```bash
+# Prerequisites: Multiple llm-d stacks already deployed in different namespaces
+
+# Step 1: Install the WVA controller once (cluster-wide)
+helm install wva-controller ./charts/workload-variant-autoscaler \
+  -n workload-variant-autoscaler-system \
+  --create-namespace \
+  --set installMode=controller-only \
+  --set wva.namespaceScoped=false \
+  --set wva.prometheus.baseURL="https://prometheus-k8s.monitoring.svc:9090"
+
+# Step 2: Deploy model resources for each llm-d stack
+# Model A in llm-d-stack-a namespace
+helm install wva-model-a ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=llm-d-stack-a \
+  --set llmd.modelName=ms-model-a-llm-d-modelservice \
+  --set llmd.modelID="meta-llama/Llama-2-7b-hf" \
+  --set va.accelerator=H100
+
+# Model B in llm-d-stack-b namespace
+helm install wva-model-b ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=llm-d-stack-b \
+  --set llmd.modelName=ms-model-b-llm-d-modelservice \
+  --set llmd.modelID="mistralai/Mistral-7B-v0.1" \
+  --set va.accelerator=A100
+
+# Model C in llm-d-stack-c namespace
+helm install wva-model-c ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=llm-d-stack-c \
+  --set llmd.modelName=ms-model-c-llm-d-modelservice \
+  --set llmd.modelID="google/gemma-2b" \
+  --set va.accelerator=L40S
+```
+
+**Architecture with Multiple Models:**
+
+```
+Cluster
+├── workload-variant-autoscaler-system (namespace)
+│   └── wva-controller (Deployment) ← Single controller watching all namespaces
+│
+├── llm-d-stack-a (namespace)
+│   ├── llm-d resources (Gateway, Scheduler, vLLM)
+│   └── wva-resources (VA, HPA, Service, ServiceMonitor) for Model A
+│
+├── llm-d-stack-b (namespace)
+│   ├── llm-d resources (Gateway, Scheduler, vLLM)
+│   └── wva-resources (VA, HPA, Service, ServiceMonitor) for Model B
+│
+└── llm-d-stack-c (namespace)
+    ├── llm-d resources (Gateway, Scheduler, vLLM)
+    └── wva-resources (VA, HPA, Service, ServiceMonitor) for Model C
+```
+
+**Benefits:**
+- Single WVA controller manages all models across the cluster
+- Each model's resources are isolated in their own namespace
+- Adding/removing models doesn't affect other models
+- Supports multiple llm-d stacks without resource conflicts
+
+##### Upgrading Existing Installations
+
+If you have an existing WVA installation (v0.4.1 or earlier), it will continue to work with the default `all` mode. To migrate to the new multi-model architecture:
+
+```bash
+# 1. Note your current model configuration
+kubectl get variantautoscaling -A
+kubectl get hpa -A | grep vllm
+
+# 2. Uninstall the old WVA installation
+helm uninstall workload-variant-autoscaler -n workload-variant-autoscaler-system
+
+# 3. Reinstall with controller-only mode
+helm install wva-controller ./charts/workload-variant-autoscaler \
+  -n workload-variant-autoscaler-system \
+  --create-namespace \
+  --set installMode=controller-only \
+  --set wva.namespaceScoped=false \
+  --set wva.prometheus.baseURL="<your-prometheus-url>"
+
+# 4. Reinstall model resources for each model
+helm install wva-model-a ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=<your-model-namespace> \
+  --set llmd.modelName=<your-model-name> \
+  --set llmd.modelID="<your-model-id>" \
+  --set va.accelerator=<your-accelerator>
+```
+
 #### Helm Uninstall
 
 ```bash
-# Uninstall the release
+# Uninstall controller
+helm uninstall wva-controller -n workload-variant-autoscaler-system
+
+# Uninstall model resources (repeat for each model)
+helm uninstall wva-model-a
+helm uninstall wva-model-b
+# ...
+
+# Or uninstall all-in-one installation
 helm uninstall workload-variant-autoscaler -n workload-variant-autoscaler-system
 ```
 
