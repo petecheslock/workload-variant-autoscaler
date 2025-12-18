@@ -2,6 +2,8 @@
 
 This guide covers installing Workload-Variant-Autoscaler (WVA) on your Kubernetes cluster.
 
+> **New in v0.4.2**: WVA now supports flexible installation modes for multi-model deployments. See the [Multi-Model Migration Guide](multi-model-migration.md) for details on deploying WVA across multiple llm-d stacks.
+
 ## Prerequisites
 
 - Kubernetes v1.32.0 or later
@@ -13,7 +15,13 @@ This guide covers installing Workload-Variant-Autoscaler (WVA) on your Kubernete
 
 ### Option 1: Helm Installation (Recommended)
 
-The simplest way to install WVA is using Helm:
+The simplest way to install WVA is using Helm. The Helm chart supports three installation modes:
+
+- **`all` (default)**: Install both controller and model resources together
+- **`controller-only`**: Install only the controller for cluster-wide management
+- **`model-resources-only`**: Install only model-specific resources
+
+**Basic installation (single model):**
 
 ```bash
 # Install WVA with default configuration
@@ -27,6 +35,28 @@ helm install workload-variant-autoscaler ./charts/workload-variant-autoscaler \
   --create-namespace \
   --values custom-values.yaml
 ```
+
+**Multi-model installation:**
+
+For deploying WVA to manage multiple models across different namespaces:
+
+```bash
+# Step 1: Install controller once
+helm install wva-controller ./charts/workload-variant-autoscaler \
+  -n workload-variant-autoscaler-system \
+  --create-namespace \
+  --set installMode=controller-only \
+  --set wva.namespaceScoped=false
+
+# Step 2: Install model resources for each model
+helm install wva-model-a ./charts/workload-variant-autoscaler \
+  --set installMode=model-resources-only \
+  --set llmd.namespace=llm-d-model-a \
+  --set llmd.modelName=model-a \
+  --set llmd.modelID="meta-llama/Llama-2-7b-hf"
+```
+
+See the [Multi-Model Migration Guide](multi-model-migration.md) for complete details.
 
 **Verify the installation:**
 ```bash
