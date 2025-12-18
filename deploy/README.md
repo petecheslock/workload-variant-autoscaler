@@ -221,7 +221,7 @@ The WVA can be deployed as a standalone using Helm, assuming you have:
 
 This method is particularly useful when there is one (or more) existing llm-d infrastructure deployed.
 
-> **New in v0.4.2**: The Helm chart now supports three installation modes (`all`, `controller-only`, `model-resources-only`) to enable flexible multi-model deployments. See the [Helm Chart Installation Modes](#helm-chart-installation-modes) section below for details.
+> **New in v0.4.3**: The Helm chart now supports three installation modes (`all`, `controller-only`, `model-resources-only`) to enable flexible multi-model deployments. See the [Helm Chart Installation Modes](#helm-chart-installation-modes) section below for details.
 
 #### Helm Chart Quick Start
 
@@ -533,7 +533,7 @@ EOF
 
 #### Helm Chart Installation Modes
 
-**New in v0.4.2**: The Helm chart supports three installation modes to enable flexible multi-model deployments across multiple namespaces. This addresses the limitation where installing WVA for a new model would overwrite resources from existing models.
+**New in v0.4.3**: The Helm chart supports three installation modes to enable flexible multi-model deployments across multiple namespaces. This addresses the limitation where installing WVA for a new model would overwrite resources from existing models.
 
 ##### Mode 1: `all` (Default - Backward Compatible)
 

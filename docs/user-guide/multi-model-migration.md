@@ -4,9 +4,9 @@ This guide helps you migrate from a single-model WVA installation to a multi-mod
 
 ## Overview
 
-**Prior to v0.4.2**, the WVA Helm chart installed both the controller and model-specific resources together. This meant that installing WVA for a new model would overwrite the resources from existing models, making it impossible to support multiple llm-d stacks.
+**Prior to v0.4.3**, the WVA Helm chart installed both the controller and model-specific resources together. This meant that installing WVA for a new model would overwrite the resources from existing models, making it impossible to support multiple llm-d stacks.
 
-**Starting with v0.4.2**, WVA supports three installation modes that enable you to decouple the controller from model resources:
+**Starting with v0.4.3**, WVA supports three installation modes that enable you to decouple the controller from model resources:
 
 - `all` (default) - Install both controller and model resources together
 - `controller-only` - Install only the WVA controller

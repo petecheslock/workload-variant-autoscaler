@@ -2,7 +2,7 @@
 
 This guide covers installing Workload-Variant-Autoscaler (WVA) on your Kubernetes cluster.
 
-> **New in v0.4.2**: WVA now supports flexible installation modes for multi-model deployments. See the [Multi-Model Migration Guide](multi-model-migration.md) for details on deploying WVA across multiple llm-d stacks.
+> **New in v0.4.3**: WVA now supports flexible installation modes for multi-model deployments. See the [Multi-Model Migration Guide](multi-model-migration.md) for details on deploying WVA across multiple llm-d stacks.
 
 ## Prerequisites
 
