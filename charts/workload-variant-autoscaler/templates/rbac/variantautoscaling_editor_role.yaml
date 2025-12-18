@@ -1,3 +1,4 @@
+{{- if or (eq .Values.installMode "all") (eq .Values.installMode "controller-only") }}
 # This rule is not used by the project workload-variant-autoscaler itself.
 # It is provided to allow the cluster admin to help manage permissions for users.
 #
@@ -30,3 +31,4 @@ rules:
   - variantautoscalings/status
   verbs:
   - get
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if or (eq .Values.installMode "all") (eq .Values.installMode "controller-only") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,3 +11,4 @@ data:
     {{- else }}
     # CA certificate not provided - using system CA bundle
     {{- end }}
+{{- end }}

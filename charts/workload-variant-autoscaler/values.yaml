@@ -1,3 +1,9 @@
+# Installation mode controls which components are installed:
+# - "all": Install both controller and model-specific resources (default, backward compatible)
+# - "controller-only": Install only the WVA controller (for cluster-wide controller management)
+# - "model-resources-only": Install only model-specific resources (VA, HPA, Service, ServiceMonitor)
+installMode: all
+
 wva:
   enabled: true
 

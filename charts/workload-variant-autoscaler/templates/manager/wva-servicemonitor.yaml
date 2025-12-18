@@ -1,3 +1,4 @@
+{{- if or (eq .Values.installMode "all") (eq .Values.installMode "controller-only") }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -27,3 +28,4 @@ spec:
     matchLabels:
       app.kubernetes.io/name: workload-variant-autoscaler
       control-plane: controller-manager
+{{- end }}

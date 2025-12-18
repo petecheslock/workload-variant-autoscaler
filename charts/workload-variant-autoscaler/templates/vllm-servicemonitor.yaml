@@ -1,4 +1,4 @@
-{{- if .Values.vllmService.enabled }}
+{{- if and (or (eq .Values.installMode "all") (eq .Values.installMode "model-resources-only")) .Values.vllmService.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

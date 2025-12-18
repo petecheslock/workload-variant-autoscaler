@@ -1,3 +1,4 @@
+{{- if or (eq .Values.installMode "all") (eq .Values.installMode "controller-only") }}
 apiVersion: v1
 kind: ConfigMap
 # This ConfigMap defines saturation-based scaling thresholds for model variants.
@@ -61,4 +62,4 @@ data:
   #   model_id: meta/llama-70b
   #   namespace: production
   #   kvCacheThreshold: 0.85
-  #   kvSpareTrigger: 0.15
+  #   kvSpareTrigger: 0.15{{- end }}

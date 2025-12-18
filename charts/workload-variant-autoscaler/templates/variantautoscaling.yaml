@@ -1,4 +1,4 @@
-{{- if .Values.va.enabled }}
+{{- if and (or (eq .Values.installMode "all") (eq .Values.installMode "model-resources-only")) .Values.va.enabled }}
 apiVersion: llmd.ai/v1alpha1
 # Optimizing a variant, create only when the model is deployed and serving traffic
 # this is for the collector the collect existing (previous) running metrics of the variant.

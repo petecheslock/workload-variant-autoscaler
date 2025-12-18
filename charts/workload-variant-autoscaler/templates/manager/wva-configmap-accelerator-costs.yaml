@@ -1,3 +1,4 @@
+{{- if or (eq .Values.installMode "all") (eq .Values.installMode "controller-only") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -34,3 +35,4 @@ data:
     "device": "NVIDIA-L40S",
     "cost": "32.00"
     }
+{{- end }}
