@@ -72,16 +72,26 @@ var _ = Describe("ShareGPT Scale-Up Test", Ordered, func() {
 		_, _ = fmt.Fprintf(GinkgoWriter, "Initial ready replicas: %d\n", initialReplicas)
 
 		By("recording initial VariantAutoscaling state")
-		// Find VariantAutoscaling by label selector (name includes release name)
+		// Find VariantAutoscaling by label selector and matching target deployment
 		vaList := &v1alpha1.VariantAutoscalingList{}
 		err = crClient.List(ctx, vaList, client.InNamespace(llmDNamespace), client.MatchingLabels{
 			"app.kubernetes.io/name": "workload-variant-autoscaler",
 		})
 		Expect(err).NotTo(HaveOccurred(), "Should be able to list VariantAutoscalings")
 		Expect(vaList.Items).NotTo(BeEmpty(), "At least one WVA VariantAutoscaling should exist")
-		va := &vaList.Items[0]
+
+		// Select the VA that targets the expected deployment
+		// This ensures we pick the correct VA when multiple models exist
+		var va *v1alpha1.VariantAutoscaling
+		for i := range vaList.Items {
+			if vaList.Items[i].Spec.ScaleTargetRef.Name == deployment {
+				va = &vaList.Items[i]
+				break
+			}
+		}
+		Expect(va).NotTo(BeNil(), "A VariantAutoscaling targeting deployment %s should exist", deployment)
 		vaName = va.Name
-		_, _ = fmt.Fprintf(GinkgoWriter, "Found VariantAutoscaling: %s\n", vaName)
+		_, _ = fmt.Fprintf(GinkgoWriter, "Found VariantAutoscaling: %s (targets %s)\n", vaName, deployment)
 
 		initialOptimized = int32(va.Status.DesiredOptimizedAlloc.NumReplicas)
 		_, _ = fmt.Fprintf(GinkgoWriter, "Initial optimized replicas: %d\n", initialOptimized)
