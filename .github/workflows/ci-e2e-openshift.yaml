@@ -335,13 +335,14 @@ jobs:
 
           # Deploy WVA resources (VA, HPA, ServiceMonitor) for Model A2
           # controller.enabled=false since we're using the existing WVA controller
+          # Note: llmd.modelName should be base name without -decode suffix (template appends it)
           helm upgrade -i "$MODEL_A2_RELEASE" ./charts/workload-variant-autoscaler \
             -n "$WVA_NAMESPACE" \
             --set controller.enabled=false \
             --set va.enabled=true \
             --set hpa.enabled=true \
             --set llmd.namespace="$LLMD_NAMESPACE" \
-            --set llmd.modelName="$MODEL_A2_DEPLOYMENT" \
+            --set llmd.modelName="model-a2" \
             --set llmd.modelID="$MODEL_ID" \
             --set va.accelerator="$ACCELERATOR_TYPE" \
             --set wva.baseName="model-a2" \
@@ -390,13 +391,14 @@ jobs:
 
           # Deploy WVA resources (VA, HPA, ServiceMonitor) for Model B
           # controller.enabled=false since we're using the existing WVA controller
+          # Note: llmd.modelName should be base name without -decode suffix (template appends it)
           helm upgrade -i "$MODEL_B_RELEASE" ./charts/workload-variant-autoscaler \
             -n "$WVA_NAMESPACE" \
             --set controller.enabled=false \
             --set va.enabled=true \
             --set hpa.enabled=true \
             --set llmd.namespace="$LLMD_NAMESPACE_B" \
-            --set llmd.modelName="ms-inference-scheduling-llm-d-modelservice-decode" \
+            --set llmd.modelName="ms-inference-scheduling-llm-d-modelservice" \
             --set llmd.modelID="$MODEL_ID" \
             --set va.accelerator="$ACCELERATOR_TYPE" \
             --set wva.baseName="inference-scheduling" \
