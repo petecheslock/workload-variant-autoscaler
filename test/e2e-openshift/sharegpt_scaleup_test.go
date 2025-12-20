@@ -345,13 +345,13 @@ exit 1`,
 	})
 
 	It("should maintain scaled state while load is active", func() {
-		By("verifying deployment stays scaled for at least 30 seconds")
+		By("verifying deployment stays scaled for at least 1 minute")
 		Consistently(func(g Gomega) {
 			deploy, err := k8sClient.AppsV1().Deployments(llmDNamespace).Get(ctx, deployment, metav1.GetOptions{})
 			g.Expect(err).NotTo(HaveOccurred(), "Should be able to get deployment")
 			g.Expect(deploy.Status.ReadyReplicas).To(BeNumerically(">=", scaledOptimized),
 				fmt.Sprintf("Deployment should maintain at least %d replicas while job is running", scaledOptimized))
-		}, 30*time.Second, 5*time.Second).Should(Succeed())
+		}, 1*time.Minute, 5*time.Second).Should(Succeed())
 
 		_, _ = fmt.Fprintf(GinkgoWriter, "Deployment maintained %d replicas under load (target: %d)\n", scaledReplicas, scaledOptimized)
 	})
