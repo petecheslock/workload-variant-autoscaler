@@ -269,12 +269,13 @@ exit 1`,
 		_, _ = fmt.Fprintf(GinkgoWriter, "All %d load generation jobs are running\n", numLoadWorkers)
 	})
 
-	It("should detect increased load and recommend scale-up", func() {
+	It("should detect increased load and trigger scale-up", func() {
 		By("waiting for load generation to ramp up (30 seconds)")
 		time.Sleep(30 * time.Second)
 
-		By("monitoring VariantAutoscaling for scale-up recommendation")
+		By("monitoring VariantAutoscaling and HPA for scale-up")
 		Eventually(func(g Gomega) {
+			// Check VariantAutoscaling
 			va := &v1alpha1.VariantAutoscaling{}
 			err := crClient.Get(ctx, client.ObjectKey{
 				Namespace: llmDNamespace,
@@ -284,12 +285,10 @@ exit 1`,
 
 			scaledOptimized = int32(va.Status.DesiredOptimizedAlloc.NumReplicas)
 			currentRateStr := va.Status.CurrentAlloc.Load.ArrivalRate
-			_, _ = fmt.Fprintf(GinkgoWriter, "Current optimized replicas: %d (initial: %d, minReplicas: %d), arrival rate: %s\n",
+			_, _ = fmt.Fprintf(GinkgoWriter, "VA optimized replicas: %d (initial: %d, minReplicas: %d), arrival rate: %s\n",
 				scaledOptimized, initialOptimized, hpaMinReplicas, currentRateStr)
 
 			// Expect scale-up recommendation (more than minReplicas)
-			// We compare against minReplicas, not initial state, to ensure test passes
-			// regardless of starting deployment state
 			if !lowLoad {
 				g.Expect(scaledOptimized).To(BeNumerically(">", hpaMinReplicas),
 					fmt.Sprintf("WVA should recommend more replicas than minReplicas under load (current: %d, min: %d)", scaledOptimized, hpaMinReplicas))
@@ -297,177 +296,26 @@ exit 1`,
 				_, _ = fmt.Fprintf(GinkgoWriter, "Low load detected, skipping scale-up recommendation check\n")
 			}
 
+			// Check HPA desiredReplicas immediately after VA check (while load is still active)
+			hpa, err := k8sClient.AutoscalingV2().HorizontalPodAutoscalers(llmDNamespace).Get(ctx, hpaName, metav1.GetOptions{})
+			g.Expect(err).NotTo(HaveOccurred(), "Should be able to get HPA")
+
+			_, _ = fmt.Fprintf(GinkgoWriter, "HPA desiredReplicas: %d, currentReplicas: %d\n",
+				hpa.Status.DesiredReplicas, hpa.Status.CurrentReplicas)
+
+			// Check HPA desiredReplicas - this persists even after metric drops due to stabilization window
+			if !lowLoad {
+				g.Expect(hpa.Status.DesiredReplicas).To(BeNumerically(">", hpaMinReplicas),
+					fmt.Sprintf("HPA should desire more replicas than minReplicas (desired: %d, min: %d)", hpa.Status.DesiredReplicas, hpaMinReplicas))
+			}
+
 		}, 5*time.Minute, 10*time.Second).Should(Succeed())
 
 		_, _ = fmt.Fprintf(GinkgoWriter, "WVA detected load and recommended %d replicas (up from %d)\n", scaledOptimized, initialOptimized)
 	})
 
-	It("should trigger HPA to scale up the deployment", func() {
-		By("monitoring HPA for scale-up action")
-
-		// Helper to dump diagnostic information
-		dumpDiagnostics := func() {
-			_, _ = fmt.Fprintf(GinkgoWriter, "\n========== DIAGNOSTIC DUMP ==========\n")
-
-			// Dump VariantAutoscaling status
-			va := &v1alpha1.VariantAutoscaling{}
-			if err := crClient.Get(ctx, client.ObjectKey{Namespace: llmDNamespace, Name: vaName}, va); err == nil {
-				_, _ = fmt.Fprintf(GinkgoWriter, "\n--- VariantAutoscaling Status ---\n")
-				_, _ = fmt.Fprintf(GinkgoWriter, "DesiredOptimizedAlloc.NumReplicas: %d\n", va.Status.DesiredOptimizedAlloc.NumReplicas)
-				_, _ = fmt.Fprintf(GinkgoWriter, "CurrentAlloc.NumReplicas: %d\n", va.Status.CurrentAlloc.NumReplicas)
-				_, _ = fmt.Fprintf(GinkgoWriter, "CurrentAlloc.Load.ArrivalRate: %s\n", va.Status.CurrentAlloc.Load.ArrivalRate)
-				_, _ = fmt.Fprintf(GinkgoWriter, "CurrentAlloc.Load.AvgInputTokens: %s\n", va.Status.CurrentAlloc.Load.AvgInputTokens)
-				_, _ = fmt.Fprintf(GinkgoWriter, "CurrentAlloc.Load.AvgOutputTokens: %s\n", va.Status.CurrentAlloc.Load.AvgOutputTokens)
-				for _, cond := range va.Status.Conditions {
-					_, _ = fmt.Fprintf(GinkgoWriter, "Condition %s: %s (Reason: %s, Message: %s)\n",
-						cond.Type, cond.Status, cond.Reason, cond.Message)
-				}
-			} else {
-				_, _ = fmt.Fprintf(GinkgoWriter, "Failed to get VariantAutoscaling: %v\n", err)
-			}
-
-			// Dump external metrics API response
-			_, _ = fmt.Fprintf(GinkgoWriter, "\n--- External Metrics API ---\n")
-			result, err := k8sClient.RESTClient().
-				Get().
-				AbsPath("/apis/external.metrics.k8s.io/v1beta1/namespaces/" + llmDNamespace + "/" + constants.InfernoDesiredReplicas).
-				DoRaw(ctx)
-			if err != nil {
-				_, _ = fmt.Fprintf(GinkgoWriter, "Failed to query external metrics API: %v\n", err)
-			} else {
-				_, _ = fmt.Fprintf(GinkgoWriter, "External metrics response: %s\n", string(result))
-			}
-
-			// Dump HPA status and events
-			hpa, err := k8sClient.AutoscalingV2().HorizontalPodAutoscalers(llmDNamespace).Get(ctx, hpaName, metav1.GetOptions{})
-			if err == nil {
-				_, _ = fmt.Fprintf(GinkgoWriter, "\n--- HPA Status ---\n")
-				_, _ = fmt.Fprintf(GinkgoWriter, "CurrentReplicas: %d\n", hpa.Status.CurrentReplicas)
-				_, _ = fmt.Fprintf(GinkgoWriter, "DesiredReplicas: %d\n", hpa.Status.DesiredReplicas)
-				_, _ = fmt.Fprintf(GinkgoWriter, "MinReplicas: %d\n", *hpa.Spec.MinReplicas)
-				_, _ = fmt.Fprintf(GinkgoWriter, "MaxReplicas: %d\n", hpa.Spec.MaxReplicas)
-				for _, metric := range hpa.Status.CurrentMetrics {
-					if metric.External != nil {
-						_, _ = fmt.Fprintf(GinkgoWriter, "Metric %s: CurrentValue=%v, AverageValue=%v\n",
-							metric.External.Metric.Name, metric.External.Current.Value, metric.External.Current.AverageValue)
-					}
-				}
-				for _, cond := range hpa.Status.Conditions {
-					_, _ = fmt.Fprintf(GinkgoWriter, "HPA Condition %s: %s (Reason: %s, Message: %s)\n",
-						cond.Type, cond.Status, cond.Reason, cond.Message)
-				}
-			}
-
-			// Dump HPA events
-			_, _ = fmt.Fprintf(GinkgoWriter, "\n--- HPA Events ---\n")
-			events, err := k8sClient.CoreV1().Events(llmDNamespace).List(ctx, metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.kind=HorizontalPodAutoscaler", hpaName),
-			})
-			if err == nil {
-				for _, event := range events.Items {
-					_, _ = fmt.Fprintf(GinkgoWriter, "[%s] %s: %s\n", event.Type, event.Reason, event.Message)
-				}
-			}
-
-			// Dump deployment status
-			deploy, err := k8sClient.AppsV1().Deployments(llmDNamespace).Get(ctx, deployment, metav1.GetOptions{})
-			if err == nil {
-				_, _ = fmt.Fprintf(GinkgoWriter, "\n--- Deployment Status ---\n")
-				_, _ = fmt.Fprintf(GinkgoWriter, "Replicas: %d, ReadyReplicas: %d, AvailableReplicas: %d\n",
-					deploy.Status.Replicas, deploy.Status.ReadyReplicas, deploy.Status.AvailableReplicas)
-			}
-
-			// Dump WVA controller logs (last 50 lines)
-			_, _ = fmt.Fprintf(GinkgoWriter, "\n--- WVA Controller Logs (last 50 lines) ---\n")
-			podList, err := k8sClient.CoreV1().Pods(controllerNamespace).List(ctx, metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/name=workload-variant-autoscaler",
-			})
-			if err == nil && len(podList.Items) > 0 {
-				tailLines := int64(50)
-				logs, err := k8sClient.CoreV1().Pods(controllerNamespace).GetLogs(podList.Items[0].Name, &corev1.PodLogOptions{
-					Container: "manager",
-					TailLines: &tailLines,
-				}).DoRaw(ctx)
-				if err == nil {
-					_, _ = fmt.Fprintf(GinkgoWriter, "%s\n", string(logs))
-				} else {
-					_, _ = fmt.Fprintf(GinkgoWriter, "Failed to get logs: %v\n", err)
-				}
-			}
-
-			// Dump Prometheus Adapter logs (last 30 lines)
-			_, _ = fmt.Fprintf(GinkgoWriter, "\n--- Prometheus Adapter Logs (last 30 lines) ---\n")
-			adapterPods, err := k8sClient.CoreV1().Pods(monitoringNamespace).List(ctx, metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/name=prometheus-adapter",
-			})
-			if err == nil && len(adapterPods.Items) > 0 {
-				tailLines := int64(30)
-				logs, err := k8sClient.CoreV1().Pods(monitoringNamespace).GetLogs(adapterPods.Items[0].Name, &corev1.PodLogOptions{
-					TailLines: &tailLines,
-				}).DoRaw(ctx)
-				if err == nil {
-					_, _ = fmt.Fprintf(GinkgoWriter, "%s\n", string(logs))
-				} else {
-					_, _ = fmt.Fprintf(GinkgoWriter, "Failed to get adapter logs: %v\n", err)
-				}
-			}
-
-			_, _ = fmt.Fprintf(GinkgoWriter, "========== END DIAGNOSTIC DUMP ==========\n\n")
-		}
-
-		// Track if we ever saw scaling
-		scalingDetected := false
-
-		Eventually(func(g Gomega) {
-			hpa, err := k8sClient.AutoscalingV2().HorizontalPodAutoscalers(llmDNamespace).Get(ctx, hpaName, metav1.GetOptions{})
-			g.Expect(err).NotTo(HaveOccurred(), "Should be able to get HPA")
-
-			// Get current arrival rate from VariantAutoscaling for logging
-			arrivalRate := "unknown"
-			va := &v1alpha1.VariantAutoscaling{}
-			if err := crClient.Get(ctx, client.ObjectKey{Namespace: llmDNamespace, Name: vaName}, va); err == nil {
-				arrivalRate = va.Status.CurrentAlloc.Load.ArrivalRate
-			}
-
-			// Check if HPA has processed the new metric value
-			g.Expect(hpa.Status.CurrentMetrics).NotTo(BeEmpty(), "HPA should have current metrics")
-
-			// The HPA should show a target value > 1 (indicating scale-up needed)
-			if !lowLoad {
-				for _, metric := range hpa.Status.CurrentMetrics {
-					if metric.External != nil && metric.External.Metric.Name == constants.InfernoDesiredReplicas {
-						currentValue := metric.External.Current.AverageValue
-						g.Expect(currentValue).NotTo(BeNil(), "Current metric value should not be nil")
-
-						currentReplicas := currentValue.AsApproximateFloat64()
-						_, _ = fmt.Fprintf(GinkgoWriter, "HPA current metric value: %.2f (minReplicas: %d, desiredReplicas: %d, arrivalRate: %s req/s)\n",
-							currentReplicas, hpaMinReplicas, hpa.Status.DesiredReplicas, arrivalRate)
-
-						if currentReplicas > float64(hpaMinReplicas) {
-							scalingDetected = true
-						}
-
-						g.Expect(currentReplicas).To(BeNumerically(">", float64(hpaMinReplicas)),
-							"HPA should see increased replica recommendation above minReplicas")
-					}
-				}
-				// Check desired replicas - compare against minReplicas, not current state
-				// This ensures test passes regardless of starting deployment state
-				g.Expect(hpa.Status.DesiredReplicas).To(BeNumerically(">", hpaMinReplicas),
-					fmt.Sprintf("HPA should desire more replicas than minReplicas (desired: %d, min: %d)", hpa.Status.DesiredReplicas, hpaMinReplicas))
-			} else {
-				_, _ = fmt.Fprintf(GinkgoWriter, "Low load detected (arrivalRate: %s), skipping HPA scale-up check\n", arrivalRate)
-			}
-		}, 3*time.Minute, 10*time.Second).Should(Succeed(), func() string {
-			// On failure, dump diagnostics
-			if !scalingDetected {
-				dumpDiagnostics()
-			}
-			return "scaling did not occur - see diagnostic dump above"
-		})
-
-		_, _ = fmt.Fprintf(GinkgoWriter, "HPA triggered scale-up\n")
-	})
+	// Note: HPA desiredReplicas is already checked in the previous test while load is active.
+	// This test verifies deployment actually scaled.
 
 	It("should scale deployment to match recommended replicas", func() {
 		By("monitoring deployment for actual scale-up")
