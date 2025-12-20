@@ -126,7 +126,7 @@ jobs:
     if: needs.gate.outputs.should_run == 'true'
     env:
       MODEL_ID: ${{ github.event.inputs.model_id || 'unsloth/Meta-Llama-3.1-8B' }}
-      ACCELERATOR_TYPE: ${{ github.event.inputs.accelerator_type || 'H100' }}
+      ACCELERATOR_TYPE: ${{ github.event.inputs.accelerator_type || 'A100' }}
       REQUEST_RATE: ${{ github.event.inputs.request_rate || '20' }}
       NUM_PROMPTS: ${{ github.event.inputs.num_prompts || '3000' }}
       MAX_NUM_SEQS: ${{ github.event.inputs.max_num_seqs || '1' }}
