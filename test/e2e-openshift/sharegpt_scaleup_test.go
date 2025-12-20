@@ -19,6 +19,8 @@ package e2eopenshift
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,6 +35,21 @@ import (
 	v1alpha1 "github.com/llm-d-incubation/workload-variant-autoscaler/api/v1alpha1"
 	"github.com/llm-d-incubation/workload-variant-autoscaler/internal/constants"
 )
+
+// sanitizeK8sName converts a human-readable name to a valid Kubernetes resource name.
+// Kubernetes names must be lowercase alphanumeric, may contain '-' and '.', and
+// must start and end with an alphanumeric character.
+func sanitizeK8sName(name string) string {
+	// Convert to lowercase and replace spaces with hyphens
+	result := strings.ToLower(name)
+	result = strings.ReplaceAll(result, " ", "-")
+	// Remove any characters that aren't lowercase alphanumeric or hyphens
+	re := regexp.MustCompile(`[^a-z0-9-]`)
+	result = re.ReplaceAllString(result, "")
+	// Trim leading/trailing hyphens
+	result = strings.Trim(result, "-")
+	return result
+}
 
 var lowLoad = numPrompts <= 2000 && requestRate <= 8
 
@@ -99,6 +116,7 @@ var _ = Describe("ShareGPT Scale-Up Test", Ordered, func() {
 
 		Context(fmt.Sprintf("Testing %s in namespace %s", model.name, model.namespace), Ordered, func() {
 			var (
+				sanitizedName        string // Kubernetes-safe version of model name
 				jobBaseName          string
 				initialReplicas      int32
 				initialOptimized     int32
@@ -112,7 +130,9 @@ var _ = Describe("ShareGPT Scale-Up Test", Ordered, func() {
 			)
 
 			BeforeAll(func() {
-				jobBaseName = fmt.Sprintf("load-gen-%s", model.name)
+				// Use sanitized model name for Kubernetes resource names
+				sanitizedName = sanitizeK8sName(model.name)
+				jobBaseName = fmt.Sprintf("load-gen-%s", sanitizedName)
 
 				_, _ = fmt.Fprintf(GinkgoWriter, "\n========================================\n")
 				_, _ = fmt.Fprintf(GinkgoWriter, "Starting test for %s\n", model.name)
@@ -237,7 +257,7 @@ var _ = Describe("ShareGPT Scale-Up Test", Ordered, func() {
 
 				By("waiting for vLLM to be ready to accept requests")
 				healthCheckBackoffLimit := int32(15)
-				healthCheckJobName := fmt.Sprintf("vllm-health-check-%s", model.name)
+				healthCheckJobName := fmt.Sprintf("vllm-health-check-%s", sanitizedName)
 				healthCheckJob := &batchv1.Job{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      healthCheckJobName,
