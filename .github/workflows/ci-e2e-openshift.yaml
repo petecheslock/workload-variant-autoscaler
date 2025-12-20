@@ -329,9 +329,11 @@ jobs:
 
           echo "Creating Model A2 deployment from $SOURCE_DEPLOYMENT..."
           echo "  Updating model label from $SOURCE_MODEL_LABEL to $MODEL_A2_LABEL"
+          # Update deployment name and model labels, but preserve serviceAccountName
+          # The sed for model label must not affect serviceAccount/serviceAccountName fields
           kubectl get deployment "$SOURCE_DEPLOYMENT" -n "$LLMD_NAMESPACE" -o yaml | \
             sed "s/$SOURCE_DEPLOYMENT/$MODEL_A2_DEPLOYMENT/g" | \
-            sed "s/$SOURCE_MODEL_LABEL/$MODEL_A2_LABEL/g" | \
+            sed "s/llm-d.ai\/model: $SOURCE_MODEL_LABEL/llm-d.ai\/model: $MODEL_A2_LABEL/g" | \
             sed 's/replicas: [0-9]*/replicas: 1/' | \
             kubectl apply -n "$LLMD_NAMESPACE" -f -
 
