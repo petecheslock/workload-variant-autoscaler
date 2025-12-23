@@ -94,39 +94,33 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 
 ## Architecture
 
-WVA consists of several key components:
+WVA uses an **engine-based architecture** that separates optimization logic from execution strategy:
 
-- **Reconciler**: Kubernetes controller that manages VariantAutoscaling resources
-- **Collector**: Gathers cluster state and vLLM server metrics
-<!-- 
-- **Model Analyzer**: Performs per-model analysis using queueing theory
-- **Optimizer**: Makes global scaling decisions across models
--->
-- **Optimizer**: Capacity model provides saturation based scaling based on threshold
+- **Saturation Engine**: Reactive autoscaling based on live vLLM metrics (KV cache, queue depth)
+- **Polling Executor**: Fixed-interval execution (configurable, default 30s)
+- **Collector**: Gathers cluster state and vLLM server metrics from Prometheus
+- **Analyzer**: Performs saturation analysis using spare capacity model
 - **Actuator**: Emits metrics to Prometheus and updates deployment replicas
 
-<!-- 
-For detailed architecture information, see the [design documentation](docs/design/modeling-optimization.md).
--->
+For detailed architecture information, see the [Engine Architecture documentation](docs/design/engine-architecture.md).
 ## How It Works
 
 1. Platform admin deploys llm-d infrastructure (including model servers) and waits for servers to warm up and start serving requests
 2. Platform admin creates a `VariantAutoscaling` CR for the running deployment
-3. WVA continuously monitors request rates and server performance via Prometheus metrics
-<!-- 
-4. Model Analyzer estimates latency and throughput using queueing models
-5. Optimizer solves for minimal cost allocation meeting all SLOs
--->
-4. Capacity model obtains KV cache utilization and queue depth of inference servers with slack capacity to determine replicas
-5. Actuator emits optimization metrics to Prometheus and updates VariantAutoscaling status
-6. External autoscaler (HPA/KEDA) reads the metrics and scales the deployment accordingly
+3. **Saturation Engine** runs periodic optimization loop (every 30s by default):
+   - Collects vLLM metrics from Prometheus (KV cache utilization, queue depth)
+   - Analyzes saturation using spare capacity model
+   - Determines target replicas based on saturation thresholds
+   - Updates VariantAutoscaling status with current/desired replicas
+   - Emits metrics to Prometheus
+4. External autoscaler (HPA/KEDA) reads the metrics and scales the deployment accordingly
 
-**Important Notes**:
-<!-- 
-- Create the VariantAutoscaling CR **only after** your deployment is warmed up to avoid immediate scale-down
--->
+**Important Notes:**
 - Configure HPA stabilization window (recommend 120s+) for gradual scaling behavior
-- WVA updates the VA status with current and desired allocations every reconciliation cycle
+- WVA updates the VA status with current and desired allocations every optimization cycle
+- Saturation thresholds are configurable per-model via ConfigMap
+
+See [Engine Architecture](docs/design/engine-architecture.md) for detailed workflow.
 
 ## Example
 

@@ -33,6 +33,7 @@ Integration with other systems:
 
 Understanding how WVA works:
 
+- **[Engine Architecture](design/engine-architecture.md)** - Engine-based architecture with pluggable optimization and execution strategies
 - **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms
 - **[Architecture Limitations](design/architecture-limitations.md)** - **Important:** Model architecture assumptions and limitations (READ THIS if using HSSM, MoE, or non-standard architectures)
 - **[Architecture Diagrams](design/diagrams/)** - System architecture and workflows
