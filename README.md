@@ -62,31 +62,31 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 - [Installation Guide](docs/user-guide/installation.md)
 - [Configuration](docs/user-guide/configuration.md)
 - [CRD Reference](docs/user-guide/crd-reference.md)
-
-<!-- 
+- [FAQ](docs/user-guide/faq.md) - Frequently asked questions
 
 ### Tutorials
 - [Quick Start Demo](docs/tutorials/demo.md)
 - [Parameter Estimation](docs/tutorials/parameter-estimation.md)
 - [vLLM Server Setup](docs/tutorials/vllm-samples.md)
--->
+- [GuideLLM Benchmarking](docs/tutorials/guidellm-sample.md)
+
 ### Integrations
 - [HPA Integration](docs/integrations/hpa-integration.md)
 - [KEDA Integration](docs/integrations/keda-integration.md)
 - [Prometheus Metrics](docs/integrations/prometheus.md)
 
-<!-- 
-
 ### Design & Architecture
-- [Architecture Overview](docs/design/modeling-optimization.md)
+- [Architecture Overview](docs/design/architecture-overview.md) - Complete system architecture
+- [Saturation Analyzer](docs/saturation-analyzer.md) - Saturation-based scaling deep dive
+- [Modeling & Optimization](docs/design/modeling-optimization.md) - Queue theory and optimization
 - [**Architecture Limitations**](docs/design/architecture-limitations.md) - **Important:** Read this if using HSSM, MoE, or non-standard architectures
-- [Architecture Diagrams](docs/design/diagrams/) - Visual architecture and workflow diagrams
--->
-<!-- 
+
 ### Developer Guide
 - [Development Setup](docs/developer-guide/development.md)
+- [Testing Guide](docs/developer-guide/testing.md)
+- [Debugging](docs/developer-guide/debugging.md)
+- [Agentic Workflows](docs/developer-guide/agentic-workflows.md)
 - [Contributing](CONTRIBUTING.md)
--->
 ### Deployment Options
 - [Kubernetes Deployment](deploy/kubernetes/README.md)
 - [OpenShift Deployment](deploy/openshift/README.md)

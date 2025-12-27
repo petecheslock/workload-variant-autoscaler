@@ -11,6 +11,8 @@ Getting started and using WVA:
 - **[Installation Guide](user-guide/installation.md)** - Installing WVA on your cluster
 - **[Configuration](user-guide/configuration.md)** - Configuring WVA for your workloads
 - **[CRD Reference](user-guide/crd-reference.md)** - Complete API reference for VariantAutoscaling
+- **[FAQ](user-guide/faq.md)** - Frequently asked questions
+- **[Troubleshooting](user-guide/troubleshooting.md)** - Diagnosis and problem resolution
 
 ### Tutorials
 
@@ -33,15 +35,18 @@ Integration with other systems:
 
 Understanding how WVA works:
 
+- **[Architecture Overview](design/architecture-overview.md)** - Complete system architecture and component interactions
 - **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms
 - **[Architecture Limitations](design/architecture-limitations.md)** - **Important:** Model architecture assumptions and limitations (READ THIS if using HSSM, MoE, or non-standard architectures)
-- **[Architecture Diagrams](design/diagrams/)** - System architecture and workflows
+- **[Saturation Analyzer](saturation-analyzer.md)** - Deep dive into saturation-based scaling
+- **[Architecture Diagrams](design/diagrams/)** - Visual system architecture and workflows
 
 ### Developer Guide
 
 Contributing to WVA:
 
 - **[Development Setup](developer-guide/development.md)** - Setting up your dev environment
+- **[Testing Guide](developer-guide/testing.md)** - Testing strategies and tools
 - **[Agentic Workflows](developer-guide/agentic-workflows.md)** - AI-powered automation workflows
 - **[Debugging](developer-guide/debugging.md)** - Debugging techniques and tools
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
@@ -61,7 +66,7 @@ Contributing to WVA:
 
 ## Need Help?
 
-- Check the [FAQ](user-guide/faq.md) (coming soon)
+- Check the [FAQ](user-guide/faq.md) - Frequently asked questions
 - Open a [GitHub Issue](https://github.com/llm-d-incubation/workload-variant-autoscaler/issues)
 - Join community meetings
 
