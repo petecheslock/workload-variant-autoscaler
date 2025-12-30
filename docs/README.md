@@ -33,7 +33,9 @@ Integration with other systems:
 
 Understanding how WVA works:
 
+- **[Architecture Overview](design/architecture.md)** - System architecture, components, and data flow
 - **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms
+- **[Saturation Analyzer](saturation-analyzer.md)** - Saturation-based scaling algorithm details
 - **[Architecture Limitations](design/architecture-limitations.md)** - **Important:** Model architecture assumptions and limitations (READ THIS if using HSSM, MoE, or non-standard architectures)
 - **[Architecture Diagrams](design/diagrams/)** - System architecture and workflows
 
@@ -42,6 +44,9 @@ Understanding how WVA works:
 Contributing to WVA:
 
 - **[Development Setup](developer-guide/development.md)** - Setting up your dev environment
+- **[Package Reference](developer-guide/package-reference.md)** - Internal package architecture and APIs
+- **[Metrics Collector](developer-guide/metrics-collector.md)** - Metrics collection subsystem deep-dive
+- **[Testing Guide](developer-guide/testing.md)** - Testing strategies and best practices
 - **[Agentic Workflows](developer-guide/agentic-workflows.md)** - AI-powered automation workflows
 - **[Debugging](developer-guide/debugging.md)** - Debugging techniques and tools
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
