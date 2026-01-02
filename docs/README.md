@@ -33,7 +33,9 @@ Integration with other systems:
 
 Understanding how WVA works:
 
-- **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms
+- **[Architecture Overview](architecture.md)** - Component design and data flow (START HERE)
+- **[Saturation Analyzer](saturation-analyzer.md)** - Saturation-based scaling algorithm
+- **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms (experimental)
 - **[Architecture Limitations](design/architecture-limitations.md)** - **Important:** Model architecture assumptions and limitations (READ THIS if using HSSM, MoE, or non-standard architectures)
 - **[Architecture Diagrams](design/diagrams/)** - System architecture and workflows
 

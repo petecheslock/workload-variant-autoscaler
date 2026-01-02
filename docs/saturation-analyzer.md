@@ -1,4 +1,3 @@
-# NOTE: we are currently updating the documentation to be aligned with the 0.4.0 release
 # Saturation Analyzer
 
 ## Overview
@@ -21,20 +20,20 @@ The Saturation Analyzer is a **fast, reactive, and safe saturation guardrail** t
 
 ### Components
 
-**1. Saturation Analyzer (`internal/capacity/analyzer.go`)**
+**1. Saturation Analyzer (`internal/saturation/analyzer.go`)**
 - Core analysis logic for saturation-based scaling decisions
 - Implements spare capacity calculations
 - Performs worst-case scale-down safety simulation
 - Makes **per-variant** scaling decisions with cost-awareness
 - Supports capacity-only mode and hybrid mode with model-based optimization
 
-**2. Metrics Collector (`internal/collector/capacity_metrics.go`)**
+**2. Metrics Collector (`internal/collector/prometheus/saturation_metrics.go`)**
 - Collects vLLM metrics from Prometheus using `max_over_time[1m]` queries
 - Queries `constants.VLLMKvCacheUsagePerc` and `constants.VLLMNumRequestsWaiting`
 - Uses peak values over 1 minute for safety-first capacity analysis
 - Enriches metrics with pod metadata (variant name, accelerator type)
 
-**3. Interfaces (`internal/interfaces/capacity_analyzer.go`)**
+**3. Interfaces (`internal/interfaces/saturation_analyzer.go`)**
 - Defines data structures for replica metrics (including variant cost)
 - Defines analysis results and per-variant decision types
 - Provides interface for capacity analysis
