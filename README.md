@@ -75,18 +75,16 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 - [KEDA Integration](docs/integrations/keda-integration.md)
 - [Prometheus Metrics](docs/integrations/prometheus.md)
 
-<!-- 
-
 ### Design & Architecture
-- [Architecture Overview](docs/design/modeling-optimization.md)
+- [Engine Architecture](docs/design/architecture-engines.md) - Pluggable scaling engines (saturation, model-based)
+- [Collector Architecture](docs/design/architecture-collector.md) - Metrics collection and caching
+- [Modeling & Optimization](docs/design/modeling-optimization.md) - Queue theory and optimization
 - [**Architecture Limitations**](docs/design/architecture-limitations.md) - **Important:** Read this if using HSSM, MoE, or non-standard architectures
-- [Architecture Diagrams](docs/design/diagrams/) - Visual architecture and workflow diagrams
--->
-<!-- 
+
 ### Developer Guide
 - [Development Setup](docs/developer-guide/development.md)
+- [Testing Guide](docs/developer-guide/testing.md)
 - [Contributing](CONTRIBUTING.md)
--->
 ### Deployment Options
 - [Kubernetes Deployment](deploy/kubernetes/README.md)
 - [OpenShift Deployment](deploy/openshift/README.md)
@@ -94,39 +92,71 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 
 ## Architecture
 
-WVA consists of several key components:
+WVA v0.4+ uses an **engine-based architecture** with pluggable scaling strategies:
+
+### Core Components
 
 - **Reconciler**: Kubernetes controller that manages VariantAutoscaling resources
-- **Collector**: Gathers cluster state and vLLM server metrics
-<!-- 
-- **Model Analyzer**: Performs per-model analysis using queueing theory
-- **Optimizer**: Makes global scaling decisions across models
--->
-- **Optimizer**: Capacity model provides saturation based scaling based on threshold
-- **Actuator**: Emits metrics to Prometheus and updates deployment replicas
+- **Engines**: Pluggable scaling strategies
+  - **Saturation Engine** (default): Reactive scaling based on KV-cache and queue metrics
+  - **Model Engine** (future): Predictive scaling using queueing theory
+  - **Scale-from-Zero Engine** (future): Fast scale-up from zero replicas
+- **Collector**: Gathers vLLM metrics from Prometheus with intelligent caching
+- **Saturation Analyzer**: Calculates spare capacity and scaling decisions
+- **Actuator**: Emits metrics to Prometheus for HPA/KEDA consumption
 
-<!-- 
-For detailed architecture information, see the [design documentation](docs/design/modeling-optimization.md).
--->
+### Architecture Diagram
+
+```
+┌─────────────┐
+│ Prometheus  │◄─── vLLM metrics
+└──────┬──────┘
+       │
+┌──────▼──────────────────────────┐
+│   WVA Controller                │
+│  ┌──────────────────────────┐   │
+│  │ Saturation Engine        │   │
+│  │  - Collector (cached)    │   │
+│  │  - Analyzer              │   │
+│  │  - Decision cache        │   │
+│  └──────────────────────────┘   │
+└──────┬──────────────────────────┘
+       │ emits metrics
+┌──────▼──────┐
+│ Prometheus  │
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│  HPA/KEDA   │◄─── reads inferno_desired_replicas
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│ Deployment  │
+└─────────────┘
+```
+
+For detailed architecture information, see:
+- [Engine Architecture](docs/design/architecture-engines.md)
+- [Collector Architecture](docs/design/architecture-collector.md)
+- [Modeling & Optimization](docs/design/modeling-optimization.md)
 ## How It Works
 
 1. Platform admin deploys llm-d infrastructure (including model servers) and waits for servers to warm up and start serving requests
 2. Platform admin creates a `VariantAutoscaling` CR for the running deployment
 3. WVA continuously monitors request rates and server performance via Prometheus metrics
-<!-- 
-4. Model Analyzer estimates latency and throughput using queueing models
-5. Optimizer solves for minimal cost allocation meeting all SLOs
--->
-4. Capacity model obtains KV cache utilization and queue depth of inference servers with slack capacity to determine replicas
-5. Actuator emits optimization metrics to Prometheus and updates VariantAutoscaling status
+4. **Saturation Engine** (default):
+   - Collector queries vLLM metrics (KV-cache utilization, queue depth) from Prometheus
+   - Analyzer calculates spare capacity across non-saturated replicas
+   - Determines scale-up/down based on configured thresholds
+   - Decision cache stores per-variant scaling recommendations
+5. Actuator emits optimization metrics (`inferno_desired_replicas`) to Prometheus
 6. External autoscaler (HPA/KEDA) reads the metrics and scales the deployment accordingly
 
 **Important Notes**:
-<!-- 
-- Create the VariantAutoscaling CR **only after** your deployment is warmed up to avoid immediate scale-down
--->
 - Configure HPA stabilization window (recommend 120s+) for gradual scaling behavior
 - WVA updates the VA status with current and desired allocations every reconciliation cycle
+- Saturation-based scaling is reactive (scales after detecting saturation)
+- For predictive scaling, model engine will be available in future releases
 
 ## Example
 

@@ -40,7 +40,10 @@ Guide for developers contributing to Workload-Variant-Autoscaler.
 ```bash
 workload-variant-autoscaler/
 ├── api/v1alpha1/          # CRD definitions
+│   ├── variantautoscaling_types.go  # VariantAutoscaling CRD
+│   └── conditions.go                # Status conditions
 ├── cmd/                   # Main application entry points
+│   └── main.go           # Controller manager entry point
 ├── config/                # Kubernetes manifests
 │   ├── crd/              # CRD manifests
 │   ├── rbac/             # RBAC configurations
@@ -49,25 +52,76 @@ workload-variant-autoscaler/
 ├── deploy/                # Deployment scripts
 │   ├── kubernetes/       # K8s deployment
 │   ├── openshift/        # OpenShift deployment
-│   └── kind/             # Local development
+│   └── kind-emulator/    # Local development with GPU emulation
 ├── docs/                  # Documentation
+│   ├── design/           # Architecture & design docs
+│   ├── user-guide/       # User-facing documentation
+│   ├── developer-guide/  # Development guides
+│   ├── tutorials/        # Step-by-step tutorials
+│   └── integrations/     # Integration guides
 ├── internal/              # Private application code
-│   ├── controller/       # Controller implementation
-│   ├── collector/        # Metrics collection
-│   ├── optimizer/        # Optimization logic
-│   ├── actuator/         # Metric emission & scaling
-│   └── modelanalyzer/    # Model analysis
+│   ├── controller/       # Kubernetes controller
+│   │   └── variantautoscaling_controller.go
+│   ├── engines/          # **Scaling engines (NEW)**
+│   │   ├── saturation/   # Saturation-based engine (default)
+│   │   ├── model/        # Model-based predictive engine (future)
+│   │   ├── scalefromzero/# Scale-from-zero engine (future)
+│   │   ├── executor/     # Execution strategies (polling, reactive)
+│   │   └── common/       # Shared engine infrastructure
+│   ├── collector/        # **Metrics collection (NEW)**
+│   │   ├── prometheus/   # Prometheus collector implementation
+│   │   ├── cache/        # Caching layer
+│   │   └── config/       # Collector configuration
+│   ├── saturation/       # **Saturation analysis (NEW)**
+│   │   └── analyzer.go   # Spare capacity calculations
+│   ├── actuator/         # Metric emission to Prometheus
+│   ├── optimizer/        # Global optimization logic
+│   ├── modelanalyzer/    # Model performance analysis
+│   ├── interfaces/       # **Interface definitions (NEW)**
+│   ├── constants/        # **Metric constants (NEW)**
+│   ├── logging/          # **Structured logging (NEW)**
+│   ├── metrics/          # Controller metrics
+│   ├── config/           # Internal configuration
+│   ├── discovery/        # GPU/accelerator discovery
+│   └── utils/            # Utility functions
 ├── pkg/                   # Public libraries
-│   ├── analyzer/         # Queue theory models
-│   ├── solver/           # Optimization algorithms
-│   ├── core/             # Core domain models
+│   ├── analyzer/         # Queue theory models (M/M/1/k, M/G/1)
+│   ├── solver/           # Optimization algorithms (greedy solver)
+│   ├── core/             # Core domain models (Server, Allocation)
+│   ├── manager/          # Resource management
 │   └── config/           # Configuration structures
 ├── test/                  # Tests
-│   ├── e2e/              # End-to-end tests
+│   ├── e2e/              # End-to-end tests (model-based)
+│   ├── e2e-saturation-based/  # **Saturation E2E tests (NEW)**
+│   ├── e2e-openshift/    # **OpenShift E2E tests (NEW)**
 │   └── utils/            # Test utilities
-└── tools/                 # Development tools
-    └── vllm-emulator/    # Testing emulator
+├── charts/               # Helm charts
+│   └── workload-variant-autoscaler/
+└── hack/                 # Build and development scripts
 ```
+
+### Key Package Responsibilities
+
+**internal/engines/**: Pluggable scaling engines
+- `saturation/`: Default saturation-based reactive scaling
+- `model/`: Predictive scaling using queueing theory (future)
+- `executor/`: Task execution strategies (polling, reactive, hybrid)
+
+**internal/collector/**: Metrics collection and caching
+- `prometheus/`: Prometheus API integration
+- `cache/`: In-memory caching with TTL
+- Background fetching for proactive cache warming
+
+**internal/saturation/**: Saturation analysis algorithms
+- Spare capacity calculations
+- Scale-up/down decision logic
+- Safety simulations
+
+**internal/interfaces/**: Type definitions and contracts
+- MetricsCollector, SaturationAnalyzer interfaces
+- Data structures for metrics and decisions
+
+See [Architecture: Engines](../design/architecture-engines.md) for detailed component descriptions.
 
 ## Development Workflow
 

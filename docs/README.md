@@ -33,6 +33,8 @@ Integration with other systems:
 
 Understanding how WVA works:
 
+- **[Engine Architecture](design/architecture-engines.md)** - **NEW:** Pluggable scaling engines (saturation, model-based, scale-from-zero)
+- **[Collector Architecture](design/architecture-collector.md)** - **NEW:** Metrics collection, caching, and Prometheus integration
 - **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms
 - **[Architecture Limitations](design/architecture-limitations.md)** - **Important:** Model architecture assumptions and limitations (READ THIS if using HSSM, MoE, or non-standard architectures)
 - **[Architecture Diagrams](design/diagrams/)** - System architecture and workflows
@@ -42,6 +44,7 @@ Understanding how WVA works:
 Contributing to WVA:
 
 - **[Development Setup](developer-guide/development.md)** - Setting up your dev environment
+- **[Testing Guide](developer-guide/testing.md)** - Unit tests, E2E tests, and testing strategies
 - **[Agentic Workflows](developer-guide/agentic-workflows.md)** - AI-powered automation workflows
 - **[Debugging](developer-guide/debugging.md)** - Debugging techniques and tools
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
