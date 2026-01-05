@@ -82,11 +82,126 @@ var _ = Describe("Optimizer", func() {
 ### Unit Test Best Practices
 
 - **Use table-driven tests** for testing multiple scenarios
-- **Mock external dependencies** (Kubernetes API, Prometheus, etc.)
+- **Mock external dependencies** (Kubernetes API, Prometheus, MetricsCollector, etc.)
 - **Test edge cases** (zero values, negative numbers, nil pointers, etc.)
 - **Keep tests fast** - unit tests should run in milliseconds
 - **Use descriptive test names** - clearly state what is being tested
 - **Follow AAA pattern** - Arrange, Act, Assert
+
+### Mocking the MetricsCollector
+
+The `MetricsCollector` interface can be mocked for testing controller logic without a real Prometheus instance:
+
+```go
+// Example: Mock MetricsCollector for testing
+type MockMetricsCollector struct {
+    MetricsToReturn    interfaces.OptimizerMetrics
+    ReplicaMetrics     []interfaces.ReplicaMetrics
+    ValidationResult   interfaces.MetricsValidationResult
+    ShouldReturnError  bool
+}
+
+func (m *MockMetricsCollector) ValidateMetricsAvailability(
+    ctx context.Context,
+    modelName string,
+    namespace string,
+) interfaces.MetricsValidationResult {
+    return m.ValidationResult
+}
+
+func (m *MockMetricsCollector) AddMetricsToOptStatus(
+    ctx context.Context,
+    va *llmdVariantAutoscalingV1alpha1.VariantAutoscaling,
+    deployment appsv1.Deployment,
+    acceleratorCostVal float64,
+) (interfaces.OptimizerMetrics, error) {
+    if m.ShouldReturnError {
+        return interfaces.OptimizerMetrics{}, fmt.Errorf("mock error")
+    }
+    return m.MetricsToReturn, nil
+}
+
+func (m *MockMetricsCollector) CollectReplicaMetrics(
+    ctx context.Context,
+    modelID string,
+    namespace string,
+    deployments map[string]*appsv1.Deployment,
+    variantAutoscalings map[string]*llmdVariantAutoscalingV1alpha1.VariantAutoscaling,
+    variantCosts map[string]float64,
+) ([]interfaces.ReplicaMetrics, error) {
+    if m.ShouldReturnError {
+        return nil, fmt.Errorf("mock error")
+    }
+    return m.ReplicaMetrics, nil
+}
+
+// Usage in tests
+var _ = Describe("Controller", func() {
+    var mockCollector *MockMetricsCollector
+    
+    BeforeEach(func() {
+        mockCollector = &MockMetricsCollector{
+            MetricsToReturn: interfaces.OptimizerMetrics{
+                ArrivalRate:     10.0,
+                AvgInputTokens:  100.0,
+                AvgOutputTokens: 50.0,
+                TTFTSeconds:     0.5,
+                ITLSeconds:      0.01,
+            },
+            ValidationResult: interfaces.MetricsValidationResult{
+                Available: true,
+            },
+        }
+        
+        reconciler.MetricsCollector = mockCollector
+    })
+    
+    It("should use metrics from collector", func() {
+        // Test implementation using mock
+    })
+})
+```
+
+### Testing Cache Behavior
+
+When testing components that use the collector cache:
+
+```go
+import (
+    "github.com/llm-d-incubation/workload-variant-autoscaler/internal/collector"
+    "github.com/llm-d-incubation/workload-variant-autoscaler/internal/collector/config"
+)
+
+var _ = Describe("Cache", func() {
+    Context("with cache disabled", func() {
+        It("should always fetch fresh metrics", func() {
+            collector, _ := collector.NewMetricsCollector(collector.Config{
+                Type:    collector.CollectorTypePrometheus,
+                PromAPI: mockPromAPI,
+                CacheConfig: &config.CacheConfig{
+                    Enabled: false, // Disable cache for testing
+                },
+            })
+            // Test behavior
+        })
+    })
+    
+    Context("with cache enabled", func() {
+        It("should reuse cached metrics within TTL", func() {
+            collector, _ := collector.NewMetricsCollector(collector.Config{
+                Type:    collector.CollectorTypePrometheus,
+                PromAPI: mockPromAPI,
+                CacheConfig: &config.CacheConfig{
+                    Enabled:       true,
+                    TTL:           5 * time.Second,
+                    FetchInterval: 0, // Disable background fetch
+                },
+            })
+            // Test cache hit behavior
+        })
+    })
+})
+```
 
 ## Integration Tests
 

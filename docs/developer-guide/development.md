@@ -53,10 +53,17 @@ workload-variant-autoscaler/
 ├── docs/                  # Documentation
 ├── internal/              # Private application code
 │   ├── controller/       # Controller implementation
-│   ├── collector/        # Metrics collection
+│   ├── collector/        # Pluggable metrics collection system
+│   │   ├── cache/        # Metrics caching subsystem
+│   │   ├── config/       # Collector configuration
+│   │   └── prometheus/   # Prometheus collector backend
+│   ├── interfaces/       # Core interfaces (MetricsCollector, etc.)
 │   ├── optimizer/        # Optimization logic
-│   ├── actuator/         # Metric emission & scaling
-│   └── modelanalyzer/    # Model analysis
+│   ├── engines/          # Scaling engines (saturation, model-based)
+│   │   ├── saturation/   # Saturation-based reactive scaling
+│   │   └── model/        # Model-based proactive scaling
+│   ├── saturation/       # Saturation analysis
+│   └── utils/            # Utility functions
 ├── pkg/                   # Public libraries
 │   ├── analyzer/         # Queue theory models
 │   ├── solver/           # Optimization algorithms
