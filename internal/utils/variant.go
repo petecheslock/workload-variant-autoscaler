@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	wvav1alpha1 "github.com/llm-d-incubation/workload-variant-autoscaler/api/v1alpha1"
+	"github.com/llm-d-incubation/workload-variant-autoscaler/internal/constants"
 	"github.com/llm-d-incubation/workload-variant-autoscaler/internal/logging"
 	"github.com/llm-d-incubation/workload-variant-autoscaler/internal/metrics"
 )
@@ -162,10 +163,6 @@ func filterVariantsByDeployment(ctx context.Context, client client.Client, filte
 	return filteredVAs, nil
 }
 
-// controllerInstanceLabelKey is the label key used to associate VAs with specific controller instances.
-// This must match the key used in predicates.go for consistent filtering.
-const controllerInstanceLabelKey = "wva.llmd.ai/controller-instance"
-
 // readyVariantAutoscalings retrieves all VariantAutoscaling resources that are ready for optimization
 // using the informer cache. When CONTROLLER_INSTANCE is configured, only VAs with matching
 // controller-instance labels are returned to enable multi-controller isolation.
@@ -178,7 +175,7 @@ func readyVariantAutoscalings(ctx context.Context, k8sClient client.Client) ([]w
 	if controllerInstance != "" {
 		// Filter by controller-instance label for multi-controller isolation
 		listOpts = append(listOpts, client.MatchingLabels{
-			controllerInstanceLabelKey: controllerInstance,
+			constants.ControllerInstanceLabelKey: controllerInstance,
 		})
 		logger.V(logging.DEBUG).Info("Filtering VAs by controller instance",
 			"controllerInstance", controllerInstance)
