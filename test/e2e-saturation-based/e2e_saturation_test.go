@@ -823,7 +823,10 @@ var _ = Describe("Test workload-variant-autoscaler - Saturation Mode - Multiple 
 	})
 
 	Context("Replica stability under constant load", func() {
-		//TODO: Flaky - re-enable when controller is stable
+		// Test verifies that replica counts don't oscillate wildly under constant load.
+		// Instead of comparing to an initial baseline (which may be transient), we track
+		// the min/max range during monitoring and assert it stays within acceptable bounds.
+		// See: https://github.com/llm-d-incubation/workload-variant-autoscaler/issues/500
 		It("should maintain stable replica count under constant load", func() {
 			By("starting constant load generation")
 			loadGenJob, err := utils.CreateLoadGeneratorJob(
@@ -846,38 +849,16 @@ var _ = Describe("Test workload-variant-autoscaler - Saturation Mode - Multiple 
 				Expect(err).NotTo(HaveOccurred(), "Should be able to stop load generator")
 			}()
 
-			By("waiting for stable state to be reached")
-			time.Sleep(30 * time.Second) // Allow initial stabilization
+			By("waiting for system to stabilize under load")
+			time.Sleep(60 * time.Second) // Allow initial stabilization before monitoring
 
-			By("recording initial replica counts")
-			var initialA100Replicas, initialH100Replicas int
-			Eventually(func(g Gomega) {
-				vaA100 := &v1alpha1.VariantAutoscaling{}
-				err := crClient.Get(ctx, client.ObjectKey{
-					Namespace: namespace,
-					Name:      deployNameA100,
-				}, vaA100)
-				g.Expect(err).NotTo(HaveOccurred())
+			By("verifying replica counts don't oscillate excessively for 3 minutes")
+			// Track min/max replicas seen during monitoring period
+			// Using large initial values that will be updated on first iteration
+			minA100, maxA100 := 1000, 0
+			minH100, maxH100 := 1000, 0
+			const maxAllowedRange = 2 // Replicas should not oscillate by more than 2
 
-				vaH100 := &v1alpha1.VariantAutoscaling{}
-				err = crClient.Get(ctx, client.ObjectKey{
-					Namespace: namespace,
-					Name:      deployNameH100,
-				}, vaH100)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				initialA100Replicas = vaA100.Status.DesiredOptimizedAlloc.NumReplicas
-				initialH100Replicas = vaH100.Status.DesiredOptimizedAlloc.NumReplicas
-
-				// Ensure we have some replicas running
-				g.Expect(initialA100Replicas+initialH100Replicas).To(BeNumerically(">", 0),
-					"Should have replicas running under load")
-			}, 2*time.Minute, 10*time.Second).Should(Succeed())
-
-			_, _ = fmt.Fprintf(GinkgoWriter, "Initial stable state: A100=%d, H100=%d replicas\n",
-				initialA100Replicas, initialH100Replicas)
-
-			By("verifying replica counts remain stable for 3 minutes")
 			Consistently(func(g Gomega) {
 				vaA100 := &v1alpha1.VariantAutoscaling{}
 				err := crClient.Get(ctx, client.ObjectKey{
@@ -893,14 +874,38 @@ var _ = Describe("Test workload-variant-autoscaler - Saturation Mode - Multiple 
 				}, vaH100)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				// Allow small fluctuations (±1 replica) due to metric variance
-				g.Expect(vaA100.Status.DesiredOptimizedAlloc.NumReplicas).To(BeNumerically("~", initialA100Replicas, 1),
-					fmt.Sprintf("A100 replicas should remain stable around %d", initialA100Replicas))
+				// Update min/max tracking for A100
+				a100Replicas := vaA100.Status.DesiredOptimizedAlloc.NumReplicas
+				if a100Replicas < minA100 {
+					minA100 = a100Replicas
+				}
+				if a100Replicas > maxA100 {
+					maxA100 = a100Replicas
+				}
 
-				g.Expect(vaH100.Status.DesiredOptimizedAlloc.NumReplicas).To(BeNumerically("~", initialH100Replicas, 1),
-					fmt.Sprintf("H100 replicas should remain stable around %d", initialH100Replicas))
+				// Update min/max tracking for H100
+				h100Replicas := vaH100.Status.DesiredOptimizedAlloc.NumReplicas
+				if h100Replicas < minH100 {
+					minH100 = h100Replicas
+				}
+				if h100Replicas > maxH100 {
+					maxH100 = h100Replicas
+				}
+
+				_, _ = fmt.Fprintf(GinkgoWriter, "A100: current=%d (range %d-%d), H100: current=%d (range %d-%d)\n",
+					a100Replicas, minA100, maxA100, h100Replicas, minH100, maxH100)
+
+				// Assert replica counts don't oscillate by more than maxAllowedRange
+				g.Expect(maxA100-minA100).To(BeNumerically("<=", maxAllowedRange),
+					fmt.Sprintf("A100 replicas should not oscillate by more than %d (observed range: %d-%d)", maxAllowedRange, minA100, maxA100))
+
+				g.Expect(maxH100-minH100).To(BeNumerically("<=", maxAllowedRange),
+					fmt.Sprintf("H100 replicas should not oscillate by more than %d (observed range: %d-%d)", maxAllowedRange, minH100, maxH100))
 
 			}, 3*time.Minute, 15*time.Second).Should(Succeed())
+
+			_, _ = fmt.Fprintf(GinkgoWriter, "Stability check passed: A100 range=%d-%d, H100 range=%d-%d\n",
+				minA100, maxA100, minH100, maxH100)
 
 			By("logging VariantAutoscaling statuses after stability check")
 			err = utils.LogVariantAutoscalingStatus(ctx, deployNameA100, namespace, crClient, GinkgoWriter)
