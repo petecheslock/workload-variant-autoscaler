@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 
 	llmdOptv1alpha1 "github.com/llm-d-incubation/workload-variant-autoscaler/api/v1alpha1"
 	"github.com/llm-d-incubation/workload-variant-autoscaler/internal/constants"
@@ -20,13 +19,9 @@ var (
 	currentReplicas     *prometheus.GaugeVec
 	desiredRatio        *prometheus.GaugeVec
 
-	// controllerInstance stores the optional controller instance identifier
-	// When set, it's added as a label to all emitted metrics
+	// controllerInstance stores the optional controller instance identifier.
+	// When set, it's added as a label to all emitted metrics.
 	controllerInstance string
-
-	// initOnce ensures InitMetrics is only executed once for thread safety
-	initOnce sync.Once
-	initErr  error
 )
 
 // GetControllerInstance returns the configured controller instance label value
@@ -36,71 +31,66 @@ func GetControllerInstance() string {
 }
 
 // InitMetrics registers all custom metrics with the provided registry.
-// This function is thread-safe and can be called multiple times; initialization
-// will only occur once with the first call's registry.
+// This function should be called once during application startup from main().
+// It reads CONTROLLER_INSTANCE from the environment to optionally add
+// controller instance isolation labels to all emitted metrics.
 func InitMetrics(registry prometheus.Registerer) error {
-	initOnce.Do(func() {
-		// Read controller instance from environment
-		controllerInstance = os.Getenv(ControllerInstanceEnvVar)
+	// Read controller instance from environment
+	controllerInstance = os.Getenv(ControllerInstanceEnvVar)
 
-		// Build label sets based on whether controller_instance is configured
-		baseLabels := []string{constants.LabelVariantName, constants.LabelNamespace, constants.LabelAcceleratorType}
-		scalingLabels := []string{constants.LabelVariantName, constants.LabelNamespace, constants.LabelDirection, constants.LabelReason}
+	// Build label sets based on whether controller_instance is configured
+	baseLabels := []string{constants.LabelVariantName, constants.LabelNamespace, constants.LabelAcceleratorType}
+	scalingLabels := []string{constants.LabelVariantName, constants.LabelNamespace, constants.LabelDirection, constants.LabelReason}
 
-		if controllerInstance != "" {
-			baseLabels = append(baseLabels, constants.LabelControllerInstance)
-			scalingLabels = append(scalingLabels, constants.LabelControllerInstance)
-		}
+	if controllerInstance != "" {
+		baseLabels = append(baseLabels, constants.LabelControllerInstance)
+		scalingLabels = append(scalingLabels, constants.LabelControllerInstance)
+	}
 
-		replicaScalingTotal = prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: constants.InfernoReplicaScalingTotal,
-				Help: "Total number of replica scaling operations",
-			},
-			scalingLabels,
-		)
-		desiredReplicas = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: constants.InfernoDesiredReplicas,
-				Help: "Desired number of replicas for each variant",
-			},
-			baseLabels,
-		)
-		currentReplicas = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: constants.InfernoCurrentReplicas,
-				Help: "Current number of replicas for each variant",
-			},
-			baseLabels,
-		)
-		desiredRatio = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: constants.InfernoDesiredRatio,
-				Help: "Ratio of the desired number of replicas and the current number of replicas for each variant",
-			},
-			baseLabels,
-		)
+	replicaScalingTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: constants.InfernoReplicaScalingTotal,
+			Help: "Total number of replica scaling operations",
+		},
+		scalingLabels,
+	)
+	desiredReplicas = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: constants.InfernoDesiredReplicas,
+			Help: "Desired number of replicas for each variant",
+		},
+		baseLabels,
+	)
+	currentReplicas = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: constants.InfernoCurrentReplicas,
+			Help: "Current number of replicas for each variant",
+		},
+		baseLabels,
+	)
+	desiredRatio = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: constants.InfernoDesiredRatio,
+			Help: "Ratio of the desired number of replicas and the current number of replicas for each variant",
+		},
+		baseLabels,
+	)
 
-		// Register metrics with the registry
-		if err := registry.Register(replicaScalingTotal); err != nil {
-			initErr = fmt.Errorf("failed to register replicaScalingTotal metric: %w", err)
-			return
-		}
-		if err := registry.Register(desiredReplicas); err != nil {
-			initErr = fmt.Errorf("failed to register desiredReplicas metric: %w", err)
-			return
-		}
-		if err := registry.Register(currentReplicas); err != nil {
-			initErr = fmt.Errorf("failed to register currentReplicas metric: %w", err)
-			return
-		}
-		if err := registry.Register(desiredRatio); err != nil {
-			initErr = fmt.Errorf("failed to register desiredRatio metric: %w", err)
-			return
-		}
-	})
+	// Register metrics with the registry
+	if err := registry.Register(replicaScalingTotal); err != nil {
+		return fmt.Errorf("failed to register replicaScalingTotal metric: %w", err)
+	}
+	if err := registry.Register(desiredReplicas); err != nil {
+		return fmt.Errorf("failed to register desiredReplicas metric: %w", err)
+	}
+	if err := registry.Register(currentReplicas); err != nil {
+		return fmt.Errorf("failed to register currentReplicas metric: %w", err)
+	}
+	if err := registry.Register(desiredRatio); err != nil {
+		return fmt.Errorf("failed to register desiredRatio metric: %w", err)
+	}
 
-	return initErr
+	return nil
 }
 
 // InitMetricsAndEmitter registers metrics with Prometheus and creates a metrics emitter
