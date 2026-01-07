@@ -12,7 +12,7 @@ permissions:
 # Regular comments get a unique group (run_id) so they don't cancel in-progress test runs
 #
 # Logic:
-# - Regular comments (not /ok-to-test or /retest): unique group 'noop-{run_id}' (won't cancel anything)
+# - Regular comments (not /ok-to-test or /retest): unique group prevents cancellation of real tests
 # - Valid triggers: group 'e2e-openshift-{pr_number}' (can cancel previous runs for same PR)
 # - Fallback chain for ID: pull_request.number -> issue.number -> run_id
 concurrency:
@@ -21,7 +21,7 @@ concurrency:
       github.event_name == 'issue_comment' &&
       !contains(github.event.comment.body, '/ok-to-test') &&
       !contains(github.event.comment.body, '/retest')
-      && format('noop-{0}', github.run_id)
+      && format('comment-skip-{0}', github.run_id)
       || format('e2e-openshift-{0}',
            github.event.pull_request.number
            || github.event.issue.number
