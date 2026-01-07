@@ -66,7 +66,6 @@ _Appears in:_
 | `accelerator` _string_ | Accelerator is the type of accelerator currently allocated. |  | MinLength: 1 <br /> |
 | `numReplicas` _integer_ | NumReplicas is the number of replicas currently allocated. |  | Minimum: 0 <br /> |
 | `maxBatch` _integer_ | MaxBatch is the maximum batch size currently allocated. |  | Minimum: 0 <br /> |
-| `variantCost` _string_ | VariantCost is the cost associated with the current variant allocation. |  | Pattern: `^\d+(\.\d+)?$` <br /> |
 | `itlAverage` _string_ | ITLAverage is the average inter token latency for the current allocation. |  | Pattern: `^\d+(\.\d+)?$` <br /> |
 | `ttftAverage` _string_ | TTFTAverage is the average time to first token for the current allocation |  | Pattern: `^\d+(\.\d+)?$` <br /> |
 | `load` _[LoadProfile](#loadprofile)_ | Load describes the workload characteristics for the current allocation. |  |  |
