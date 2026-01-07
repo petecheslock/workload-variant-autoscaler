@@ -550,6 +550,8 @@ jobs:
             --set controller.enabled=false \
             --set va.enabled=true \
             --set hpa.enabled=true \
+            --set hpa.behavior.scaleUp.stabilizationWindowSeconds="$HPA_STABILIZATION_SECONDS" \
+            --set hpa.behavior.scaleDown.stabilizationWindowSeconds="$HPA_STABILIZATION_SECONDS" \
             --set llmd.namespace="$LLMD_NAMESPACE_B" \
             --set llmd.modelName="ms-inference-scheduling-llm-d-modelservice" \
             --set llmd.modelID="$MODEL_ID" \
@@ -738,34 +740,6 @@ jobs:
 
           echo ""
           echo "All vLLM deployments patched successfully"
-
-      - name: Patch HPAs for faster e2e testing
-        run: |
-          echo "Patching HPA stabilization windows for e2e testing..."
-          echo "  HPA_STABILIZATION_SECONDS: $HPA_STABILIZATION_SECONDS"
-
-          # Function to patch HPAs in a namespace
-          patch_hpas_in_namespace() {
-            local namespace=$1
-            echo ""
-            echo "Patching HPAs in namespace $namespace..."
-            for HPA_NAME in $(kubectl get hpa -n "$namespace" -l app.kubernetes.io/name=workload-variant-autoscaler -o jsonpath='{.items[*].metadata.name}'); do
-              echo "  Patching HPA: $HPA_NAME"
-              kubectl patch hpa "$HPA_NAME" -n "$namespace" --type=json -p='[
-                {"op": "replace", "path": "/spec/behavior/scaleUp/stabilizationWindowSeconds", "value": '"$HPA_STABILIZATION_SECONDS"'},
-                {"op": "replace", "path": "/spec/behavior/scaleDown/stabilizationWindowSeconds", "value": '"$HPA_STABILIZATION_SECONDS"'}
-              ]' || true
-            done
-          }
-
-          # Patch HPAs in both namespaces
-          patch_hpas_in_namespace "$LLMD_NAMESPACE"
-          patch_hpas_in_namespace "$LLMD_NAMESPACE_B"
-
-          echo ""
-          echo "All HPAs:"
-          kubectl get hpa -n "$LLMD_NAMESPACE"
-          kubectl get hpa -n "$LLMD_NAMESPACE_B"
 
       - name: Install Go dependencies
         run: go mod download
