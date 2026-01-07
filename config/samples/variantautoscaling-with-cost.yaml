@@ -8,6 +8,10 @@
 #
 # The capacity analyzer will prefer scaling the lower-cost variant when both
 # can handle the load, enabling cost optimization.
+#
+# Note: Performance parameters (alpha, beta, gamma, delta) are no longer part
+# of the CRD. WVA now uses actual runtime metrics from Prometheus for making
+# scaling decisions based on saturation analysis.
 
 ---
 apiVersion: llmd.ai/v1alpha1
@@ -30,26 +34,13 @@ spec:
   modelID: "meta/llama-3.1-70b"
 
   # Premium tier: H100 accelerator with higher cost
-  variantCost: 80.0  # Cost per replica (reflects H100 premium pricing)
+  variantCost: "80.0"  # Cost per replica (reflects H100 premium pricing)
 
   # Model profile for H100 accelerator
   modelProfile:
     accelerators:
       - acc: "H100"
         accCount: 1
-
-        # Performance parameters for H100 (faster than A100)
-        perfParms:
-          decodeParms:
-            # ITL equation: itl = alpha + beta * maxBatchSize
-            alpha: "15.2"   # Lower base latency (H100 is faster)
-            beta: "0.28"    # Lower per-batch overhead
-
-          prefillParms:
-            # TTFT equation: ttft = gamma + delta * tokens * maxBatchSize
-            gamma: "3.8"    # Lower base prefill time
-            delta: "0.07"   # Lower per-token cost
-
         maxBatchSize: 256
 
 ---
@@ -73,26 +64,13 @@ spec:
   modelID: "meta/llama-3.1-70b"
 
   # Standard tier: A100 accelerator with standard cost
-  variantCost: 40.0  # Cost per replica (standard A100 pricing)
+  variantCost: "40.0"  # Cost per replica (standard A100 pricing)
 
   # Model profile for A100 accelerator
   modelProfile:
     accelerators:
       - acc: "A100"
         accCount: 1
-
-        # Performance parameters for A100 (standard performance)
-        perfParms:
-          decodeParms:
-            # ITL equation: itl = alpha + beta * maxBatchSize
-            alpha: "20.5"   # Higher base latency than H100
-            beta: "0.41"    # Higher per-batch overhead
-
-          prefillParms:
-            # TTFT equation: ttft = gamma + delta * tokens * maxBatchSize
-            gamma: "5.2"    # Higher base prefill time
-            delta: "0.1"    # Higher per-token cost
-
         maxBatchSize: 256
 
 ---
@@ -116,19 +94,12 @@ spec:
   modelID: "meta/llama-3.1-8b"
 
   # Budget tier: Very low cost for cost-sensitive workloads
-  variantCost: 5.0  # Minimal cost for T4 GPUs
+  variantCost: "5.0"  # Minimal cost for T4 GPUs
 
   modelProfile:
     accelerators:
       - acc: "T4"
         accCount: 1
-        perfParms:
-          decodeParms:
-            alpha: "35.0"   # Slower performance
-            beta: "0.75"
-          prefillParms:
-            gamma: "12.0"
-            delta: "0.25"
         maxBatchSize: 64  # Smaller batch size for T4
 
 ---
@@ -151,19 +122,12 @@ spec:
   modelID: "meta/llama-3.1-8b"
 
   # Gold tenant: Premium pricing for priority service
-  variantCost: 25.0  # Higher cost reflects priority/SLA
+  variantCost: "25.0"  # Higher cost reflects priority/SLA
 
   modelProfile:
     accelerators:
       - acc: "A100"
         accCount: 1
-        perfParms:
-          decodeParms:
-            alpha: "20.5"
-            beta: "0.41"
-          prefillParms:
-            gamma: "5.2"
-            delta: "0.1"
         maxBatchSize: 256
 
 ---
@@ -184,19 +148,12 @@ spec:
   modelID: "meta/llama-3.1-8b"
 
   # Silver tenant: Standard pricing
-  variantCost: 15.0  # Standard cost
+  variantCost: "15.0"  # Standard cost
 
   modelProfile:
     accelerators:
       - acc: "A100"
         accCount: 1
-        perfParms:
-          decodeParms:
-            alpha: "20.5"
-            beta: "0.41"
-          prefillParms:
-            gamma: "5.2"
-            delta: "0.1"
         maxBatchSize: 256
 
 ---
@@ -221,11 +178,4 @@ spec:
     accelerators:
       - acc: "A100"
         accCount: 1
-        perfParms:
-          decodeParms:
-            alpha: "20.5"
-            beta: "0.41"
-          prefillParms:
-            gamma: "5.2"
-            delta: "0.1"
         maxBatchSize: 256

@@ -2,6 +2,14 @@
 
 Welcome to the WVA documentation! This directory contains comprehensive guides for users, developers, and operators.
 
+## What's New
+
+**Transition to Metrics-Based Approach:**
+- Performance parameters (`alpha`, `beta`, `gamma`, `delta`) removed from CRD
+- WVA now uses real-time Prometheus metrics for scaling decisions
+- Simplified configuration with fewer fields
+- See the **[Migration Guide](migration-guide.md)** for update instructions
+
 ## Documentation Structure
 
 ### User Guide
@@ -11,13 +19,14 @@ Getting started and using WVA:
 - **[Installation Guide](user-guide/installation.md)** - Installing WVA on your cluster
 - **[Configuration](user-guide/configuration.md)** - Configuring WVA for your workloads
 - **[CRD Reference](user-guide/crd-reference.md)** - Complete API reference for VariantAutoscaling
+- **[Migration Guide](migration-guide.md)** - **NEW**: Migrating from performance parameters to metrics-based approach
 
 ### Tutorials
 
 Step-by-step guides:
 
 - **[Quick Start Demo](tutorials/demo.md)** - Getting started with WVA
-- **[Parameter Estimation](tutorials/parameter-estimation.md)** - Estimating model parameters
+- **[Parameter Estimation](tutorials/parameter-estimation.md)** - ⚠️ **DEPRECATED**: Historical reference only
 - **[vLLM Samples](tutorials/vllm-samples.md)** - Working with vLLM servers
 - **[GuideLLM Sample](tutorials/guidellm-sample.md)** - Using GuideLLM for benchmarking
 

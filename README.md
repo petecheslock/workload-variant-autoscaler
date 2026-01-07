@@ -145,6 +145,18 @@ spec:
 
 More examples in [config/samples/](config/samples/).
 
+## Recent Updates
+
+### Transition to Metrics-Based Approach
+
+WVA has transitioned from using static performance parameters to a real-time metrics-based approach:
+
+- **Removed**: Performance parameters (`perfParms`, `alpha`, `beta`, `gamma`, `delta`)
+- **Added**: Real-time Prometheus metrics collection and saturation analysis
+- **Benefit**: More accurate scaling based on actual runtime behavior
+
+**If you have existing VariantAutoscaling resources**, see the [Migration Guide](docs/migration-guide.md) for update instructions.
+
 ## Upgrading
 
 ### CRD Updates

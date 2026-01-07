@@ -1,10 +1,14 @@
-# Guide to Offline Benchmarking for WVA's Model Analyzer
+# Historical Reference: Offline Benchmarking for Model Performance Parameters
 
-This guide explains how to collect performance parameters (alpha, beta, gamma, delta) for WVA's model analyzer using offline benchmarking. We will use `vllm` for model serving and `guidellm` for benchmarking, all deployed on a cluster.
+> **⚠️ DEPRECATED**: This guide describes the previous approach of collecting performance parameters (alpha, beta, gamma, delta) for WVA's model analyzer. 
+> 
+> **As of the current version, these parameters have been removed from the CRD**. WVA now uses **real-time metrics from Prometheus** to make scaling decisions based on actual runtime performance and saturation levels, eliminating the need for offline parameter estimation.
+>
+> This document is preserved for historical reference and understanding of the previous architecture.
 
-## Overview
+## Overview (Historical)
 
-WVA requires four performance parameters to optimize inference workloads:
+The previous version of WVA required four performance parameters to optimize inference workloads:
 - **Alpha (α) and Beta (β)**: Decode phase parameters for ITL (Inter-Token Latency)
 - **Gamma (γ) and Delta (δ)**: Prefill phase parameters for TTFT (Time To First Token)
 

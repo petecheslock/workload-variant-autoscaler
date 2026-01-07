@@ -356,13 +356,13 @@ More configuration examples in:
 ### Common Issues
 
 **SLOs not being met:**
-- Verify service class configuration matches workload
+- Verify metrics are being collected from Prometheus
 - Check if accelerator has sufficient capacity
-- Review model parameter estimates (alpha, beta values)
+- Review saturation thresholds in configuration
 
 **Cost too high:**
-- Consider allowing accelerator flexibility (`keepAccelerator: false`)
-- Review service class priorities
+- Adjust `variantCost` to properly reflect relative costs
+- Review saturation scaling parameters
 - Check if min replicas can be reduced
 
 ## Next Steps
