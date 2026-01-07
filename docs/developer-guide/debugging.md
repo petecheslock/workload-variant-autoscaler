@@ -207,10 +207,10 @@ kubectl logs -n workload-variant-autoscaler-system deployment/workload-variant-a
 
 ```bash
 # Check if VA detected deployment deletion
-kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="Ready")]}'
+kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="TargetResolved")]}'
 
 # Expected output when deployment is missing:
-# {"type":"Ready","status":"False","reason":"DeploymentNotFound","message":"Target deployment 'llama-8b' no longer exists"}
+# {"type":"TargetResolved","status":"False","reason":"TargetNotFound","message":"Scale target Deployment 'llama-8b' not found"}
 ```
 
 ### Verify Event Filtering
@@ -233,13 +233,13 @@ To test that VA creation before deployment works correctly:
 kubectl apply -f variantautoscaling.yaml
 
 # 2. Verify VA status shows deployment not found
-kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="Ready")]}'
+kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="TargetResolved")]}'
 
 # 3. Create deployment
 kubectl apply -f deployment.yaml
 
-# 4. Verify VA status updates to Ready (should happen within seconds, not 60s)
-kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="Ready")]}'
+# 4. Verify VA status updates to TargetResolved=True (should happen within seconds, not 60s)
+kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="TargetResolved")]}'
 ```
 
 ### Common Event-Related Issues

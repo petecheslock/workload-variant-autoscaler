@@ -62,8 +62,16 @@ Deployment Delete events allow the VA to respond immediately when its target dep
 # Before deployment deletion
 status:
   conditions:
-  - type: Ready
+  - type: TargetResolved
     status: "True"
+    reason: TargetFound
+    message: "Scale target Deployment llama-8b found"
+  - type: MetricsAvailable
+    status: "True"
+    reason: MetricsFound
+  - type: OptimizationReady
+    status: "True"
+    reason: OptimizationSucceeded
   currentAllocation:
     numReplicas: 3
     accelerator: "A100"
@@ -71,10 +79,16 @@ status:
 # After deployment deletion (immediate update)
 status:
   conditions:
-  - type: Ready
+  - type: TargetResolved
     status: "False"
-    reason: "DeploymentNotFound"
-    message: "Target deployment no longer exists"
+    reason: TargetNotFound
+    message: "Scale target Deployment llama-8b not found"
+  - type: MetricsAvailable
+    status: "False"
+    reason: MetricsMissing
+  - type: OptimizationReady
+    status: "False"
+    reason: MetricsUnavailable
   currentAllocation:
     numReplicas: 0
 ```

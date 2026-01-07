@@ -60,10 +60,18 @@ When a target deployment is deleted, WVA immediately:
 ```yaml
 status:
   conditions:
-  - type: Ready
+  - type: TargetResolved
     status: "False"
-    reason: "DeploymentNotFound"
-    message: "Target deployment 'llama-8b' no longer exists"
+    reason: "TargetNotFound"
+    message: "Scale target Deployment 'llama-8b' not found"
+  - type: MetricsAvailable
+    status: "False"
+    reason: "MetricsMissing"
+    message: "Metrics unavailable due to missing target"
+  - type: OptimizationReady
+    status: "False"
+    reason: "MetricsUnavailable"
+    message: "Cannot optimize without metrics"
   currentAllocation:
     numReplicas: 0  # Cleared to reflect no deployment
 ```
@@ -89,7 +97,14 @@ No manual intervention required!
 
 2. **Monitor VA status** to detect deployment issues:
    ```bash
-   kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="Ready")]}'
+   # Check if target deployment is resolved
+   kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="TargetResolved")]}'
+   
+   # Check metrics availability
+   kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="MetricsAvailable")]}'
+   
+   # Check optimization readiness
+   kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="OptimizationReady")]}'
    ```
 
 3. **Use consistent naming** - naming your deployment and VA with related names helps with operational clarity.

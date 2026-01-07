@@ -6,9 +6,21 @@ The Workload Variant Autoscaler (WVA) includes a comprehensive metrics health mo
 
 ## Status Conditions
 
-WVA now exposes two status conditions on each `VariantAutoscaling` resource:
+WVA exposes three status conditions on each `VariantAutoscaling` resource:
 
-### 1. MetricsAvailable
+### 1. TargetResolved
+
+Indicates whether the scale target deployment has been successfully resolved.
+
+**Status Values:**
+- `True`: Target deployment exists and is being monitored
+- `False`: Target deployment cannot be found
+
+**Reasons:**
+- `TargetFound`: Scale target deployment was successfully resolved
+- `TargetNotFound`: Scale target deployment could not be found
+
+### 2. MetricsAvailable
 
 Indicates whether vLLM metrics are available from Prometheus for the variant.
 
@@ -22,7 +34,7 @@ Indicates whether vLLM metrics are available from Prometheus for the variant.
 - `MetricsStale`: Metrics exist but are outdated (>5 minutes old)
 - `PrometheusError`: Error querying Prometheus API
 
-### 2. OptimizationReady
+### 3. OptimizationReady
 
 Indicates whether the optimization engine can run successfully.
 
@@ -62,6 +74,14 @@ kubectl get variantautoscaling <name> -n <namespace> -o jsonpath='{.status.condi
 Example output:
 ```json
 [
+  {
+    "type": "TargetResolved",
+    "status": "True",
+    "reason": "TargetFound",
+    "message": "Scale target Deployment llama-8b found",
+    "lastTransitionTime": "2025-01-15T10:29:55Z",
+    "observedGeneration": 1
+  },
   {
     "type": "MetricsAvailable",
     "status": "False",

@@ -223,6 +223,107 @@ _Appears in:_
 | `currentAlloc` _[Allocation](#allocation)_ | CurrentAlloc specifies the current resource allocation for the variant. |  | Optional: \{\} <br /> |
 | `desiredOptimizedAlloc` _[OptimizedAlloc](#optimizedalloc)_ | DesiredOptimizedAlloc indicates the target optimized allocation based on autoscaling logic. |  |  |
 | `actuation` _[ActuationStatus](#actuationstatus)_ | Actuation provides details about the actuation process and its current status. |  |  |
-| `conditions` _[Condition](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#condition-v1-meta) array_ | Conditions represent the latest available observations of the VariantAutoscaling's state |  | Optional: \{\} <br /> |
+| `conditions` _[Condition](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#condition-v1-meta) array_ | Conditions represent the latest available observations of the VariantAutoscaling's state. See [Status Conditions](#status-conditions) for details. |  | Optional: \{\} <br /> |
+
+
+## Status Conditions
+
+VariantAutoscaling resources expose status conditions to provide operational visibility. These conditions follow standard Kubernetes conventions and can be monitored using `kubectl` or automation tools.
+
+### Condition Types
+
+#### TargetResolved
+
+Indicates whether the scale target deployment has been successfully resolved and is available for autoscaling.
+
+**Status Values:**
+- `True`: Target deployment exists and is being monitored
+- `False`: Target deployment cannot be found
+
+**Reasons:**
+- `TargetFound`: Scale target deployment was successfully resolved and found in the cluster
+- `TargetNotFound`: Scale target deployment could not be found (may not exist yet or has been deleted)
+
+**Example:**
+```yaml
+conditions:
+- type: TargetResolved
+  status: "True"
+  reason: TargetFound
+  message: "Scale target Deployment llama-8b found"
+  lastTransitionTime: "2026-01-07T14:47:16Z"
+  observedGeneration: 1
+```
+
+#### MetricsAvailable
+
+Indicates whether vLLM metrics are available from Prometheus for the variant.
+
+**Status Values:**
+- `True`: Metrics are available and up-to-date
+- `False`: Metrics are missing, stale, or Prometheus query failed
+
+**Reasons:**
+- `MetricsFound`: Metrics successfully retrieved and up-to-date
+- `MetricsMissing`: No vLLM metrics found (likely ServiceMonitor misconfiguration)
+- `MetricsStale`: Metrics exist but are outdated (>5 minutes old)
+- `PrometheusError`: Error querying Prometheus API
+
+**Example:**
+```yaml
+conditions:
+- type: MetricsAvailable
+  status: "True"
+  reason: MetricsFound
+  message: "vLLM metrics successfully retrieved and up-to-date"
+  lastTransitionTime: "2026-01-07T14:47:20Z"
+  observedGeneration: 1
+```
+
+#### OptimizationReady
+
+Indicates whether the optimization engine can run successfully and has produced valid scaling recommendations.
+
+**Status Values:**
+- `True`: Optimization completed successfully
+- `False`: Optimization cannot run or failed
+
+**Reasons:**
+- `OptimizationSucceeded`: Optimization completed and replica recommendations calculated
+- `OptimizationFailed`: Optimization engine encountered an error
+- `MetricsUnavailable`: Cannot optimize without valid metrics
+- `InvalidConfiguration`: VariantAutoscaling has invalid configuration
+- `SkippedProcessing`: Variant was skipped during processing
+
+**Example:**
+```yaml
+conditions:
+- type: OptimizationReady
+  status: "True"
+  reason: OptimizationSucceeded
+  message: "Optimization completed successfully"
+  lastTransitionTime: "2026-01-07T14:47:21Z"
+  observedGeneration: 1
+```
+
+### Monitoring Conditions
+
+View all conditions for a VariantAutoscaling resource:
+
+```bash
+# View conditions in a table format
+kubectl get va llama-8b-autoscaler -o wide
+
+# Get detailed condition information
+kubectl describe va llama-8b-autoscaler
+
+# Extract specific condition using jsonpath
+kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions[?(@.type=="TargetResolved")]}'
+
+# View all conditions as JSON
+kubectl get va llama-8b-autoscaler -o jsonpath='{.status.conditions}' | jq
+```
+
+For comprehensive information about status conditions and troubleshooting, see the [Metrics Health Monitoring](../metrics-health-monitoring.md) guide.
 
 
