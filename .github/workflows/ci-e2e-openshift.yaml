@@ -124,6 +124,7 @@ jobs:
                 return;
               }
 
+              // NOTE: This list must stay in sync with concurrency group logic (lines 24-25)
               const validCommands = ['/ok-to-test', '/retest'];
               if (!validCommands.includes(comment)) {
                 console.log(`Comment "${comment}" is not a valid trigger command, skipping`);
