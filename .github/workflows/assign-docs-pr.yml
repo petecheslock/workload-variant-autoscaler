@@ -38,8 +38,14 @@ jobs:
           # For workflow_dispatch, fetch the docs PR details
           if [ -n "$INPUT_DOCS_PR" ]; then
             echo "Manual trigger - fetching docs PR #$INPUT_DOCS_PR details..."
-            PR_BODY=$(gh pr view "$INPUT_DOCS_PR" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
-            PR_HEAD_REF=$(gh pr view "$INPUT_DOCS_PR" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+            if ! PR_BODY=$(gh pr view "$INPUT_DOCS_PR" --repo "$REPO" --json body --jq '.body'); then
+              echo "Error: Unable to fetch body for docs PR #$INPUT_DOCS_PR. Check that the PR number is valid and accessible."
+              exit 1
+            fi
+            if ! PR_HEAD_REF=$(gh pr view "$INPUT_DOCS_PR" --repo "$REPO" --json headRefName --jq '.headRefName'); then
+              echo "Error: Unable to fetch head ref for docs PR #$INPUT_DOCS_PR. Check that the PR number is valid and accessible."
+              exit 1
+            fi
           else
             PR_BODY="$EVENT_PR_BODY"
             PR_HEAD_REF="$EVENT_PR_HEAD_REF"
@@ -100,6 +106,11 @@ jobs:
           # Use input docs_pr_number if provided (workflow_dispatch), otherwise use event PR number
           PR_NUMBER="${INPUT_DOCS_PR:-$EVENT_PR_NUMBER}"
 
+          if [ -z "$PR_NUMBER" ]; then
+            echo "Error: PR_NUMBER is empty. Cannot assign PR."
+            exit 1
+          fi
+
           echo "Assigning PR #$PR_NUMBER to $AUTHOR (original PR author)"
 
           gh pr edit "$PR_NUMBER" \
@@ -118,6 +129,11 @@ jobs:
           AUTHOR="${{ steps.get_author.outputs.author }}"
           # Use input docs_pr_number if provided (workflow_dispatch), otherwise use event PR number
           PR_NUMBER="${INPUT_DOCS_PR:-$EVENT_PR_NUMBER}"
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "Error: PR_NUMBER is empty. Cannot add comment."
+            exit 1
+          fi
 
           gh pr comment "$PR_NUMBER" \
             --repo "${{ github.repository }}" \
