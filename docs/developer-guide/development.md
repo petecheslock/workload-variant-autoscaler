@@ -54,6 +54,10 @@ workload-variant-autoscaler/
 ├── internal/              # Private application code
 │   ├── controller/       # Controller implementation
 │   ├── collector/        # Metrics collection
+│   │   ├── cache/        # Legacy cache implementation
+│   │   ├── config/       # Collector configuration
+│   │   ├── prometheus/   # Legacy Prometheus collector
+│   │   └── v2/          # New modular collector (feature-flagged)
 │   ├── optimizer/        # Optimization logic
 │   ├── actuator/         # Metric emission & scaling
 │   └── modelanalyzer/    # Model analysis
@@ -68,6 +72,31 @@ workload-variant-autoscaler/
 └── tools/                 # Development tools
     └── vllm-emulator/    # Testing emulator
 ```
+
+### Collector V2 Architecture
+
+The new collector v2 (`internal/collector/v2/`) provides a modular metrics collection system behind the `COLLECTOR_V2` feature flag:
+
+```bash
+internal/collector/v2/
+├── doc.go                 # Package documentation
+├── source.go              # MetricsSource interface
+├── registry.go            # SourceRegistry for managing multiple sources
+├── prometheus_source.go   # Prometheus implementation
+├── cache.go              # Thread-safe caching with TTL
+├── cache_value.go        # Cache entry wrapper
+├── query_template.go     # Parameterized query templates
+├── pod_va_mapper.go      # Pod-to-VA relationship tracking
+└── README.md             # Detailed usage guide
+```
+
+**Key Features:**
+- Per-source query registries (vs. global in v1)
+- Template-based parameterized queries
+- Isolated caching per source
+- Extensible for multiple backends (Prometheus, pod scraping, EPP)
+
+See [Collector Architecture](../design/collector-architecture.md) for design details.
 
 ## Development Workflow
 
@@ -148,6 +177,119 @@ make docker-push IMG=<your-registry>/wva-controller:tag
 
 ```bash
 PLATFORMS=linux/arm64,linux/amd64 make docker-buildx IMG=<your-registry>/wva-controller:tag
+```
+
+## Working with the Metrics Collector
+
+### Collector V2 Feature Flag
+
+Enable the new collector v2 architecture with the `COLLECTOR_V2` environment variable:
+
+```bash
+# In your deployment
+export COLLECTOR_V2=true
+
+# Or in config/manager/manager.yaml
+env:
+  - name: COLLECTOR_V2
+    value: "true"
+```
+
+### Testing Collector Changes
+
+```bash
+# Run collector v2 unit tests
+go test ./internal/collector/v2/... -v
+
+# Run with coverage
+go test ./internal/collector/v2/... -cover -coverprofile=coverage.out
+
+# View coverage report
+go tool cover -html=coverage.out
+```
+
+### Adding New Queries
+
+To add a new metric query to collector v2:
+
+1. **Register the query template** in the appropriate initialization code:
+
+```go
+// Example in internal/engines/saturation/metrics/register.go
+source.QueryList().Register(collectorv2.QueryTemplate{
+    Name:        "my_new_metric",
+    Type:        collectorv2.QueryTypePromQL,
+    Template:    `my_metric{namespace="{{.namespace}}"}`,
+    Params:      []string{"namespace"},
+    Description: "Description of what this metric measures",
+})
+```
+
+2. **Use the query** in your engine or controller:
+
+```go
+// Refresh to fetch latest values
+results, err := promSource.Refresh(ctx, collectorv2.RefreshSpec{
+    Queries: []string{"my_new_metric"},
+    Params:  map[string]string{"namespace": "default"},
+})
+
+// Or retrieve from cache
+cached := promSource.Get("my_new_metric", map[string]string{"namespace": "default"})
+```
+
+3. **Write tests** for your new query:
+
+```go
+func TestMyNewMetric(t *testing.T) {
+    source := collectorv2.NewPrometheusSource(ctx, mockAPI, collectorv2.DefaultPrometheusSourceConfig())
+    
+    source.QueryList().Register(collectorv2.QueryTemplate{
+        Name:     "my_new_metric",
+        Type:     collectorv2.QueryTypePromQL,
+        Template: `my_metric{namespace="{{.namespace}}"}`,
+        Params:   []string{"namespace"},
+    })
+    
+    // Test query execution
+    results, err := source.Refresh(ctx, collectorv2.RefreshSpec{
+        Queries: []string{"my_new_metric"},
+        Params:  map[string]string{"namespace": "test"},
+    })
+    
+    require.NoError(t, err)
+    assert.NotNil(t, results["my_new_metric"])
+}
+```
+
+See [Collector V2 README](../../internal/collector/v2/README.md) for complete usage guide.
+
+### Migrating from Legacy Collector
+
+If you're migrating code from the legacy collector to v2:
+
+**Before:**
+```go
+metrics := collector.CollectSaturationMetricsForReplica(ctx, va, deployment, pod)
+kvCache := metrics.KVCacheUsage
+```
+
+**After:**
+```go
+// Register query once at startup
+promSource.QueryList().Register(collectorv2.QueryTemplate{
+    Name:     "kv_cache_usage",
+    Type:     collectorv2.QueryTypePromQL,
+    Template: `vllm:kv_cache_usage_perc{namespace="{{.namespace}}"}`,
+    Params:   []string{"namespace"},
+})
+
+// Fetch in reconciliation loop
+results, _ := promSource.Refresh(ctx, collectorv2.RefreshSpec{
+    Queries: []string{"kv_cache_usage"},
+    Params:  map[string]string{"namespace": va.Namespace},
+})
+kvCache := results["kv_cache_usage"].Values[0].Value
 ```
 
 ## Testing
