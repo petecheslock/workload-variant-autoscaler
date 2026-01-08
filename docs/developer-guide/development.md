@@ -357,9 +357,11 @@ Key workflows:
 
 See [Agentic Workflows Guide](agentic-workflows.md) for detailed information on working with these automation tools.
 
-## Release Process
+## CI/CD and Release
 
-See [Releasing Guide](releasing.md) (coming soon) for the release process.
+For information about continuous integration, deployment, and release management:
+- **[CI/CD Workflows](cicd-workflows.md)** - GitHub Actions workflows for testing, building, and deploying
+- **[Release Process](releasing.md)** - Step-by-step guide for releasing new versions
 
 ## Getting Help
 

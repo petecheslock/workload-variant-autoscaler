@@ -330,6 +330,8 @@ Runs OpenShift E2E tests on dedicated cluster:
 - On failure: automatically scales down GPU workloads while preserving debugging resources (VA, HPA, logs)
 - Smart resource management frees GPUs for other PRs without manual intervention
 
+For comprehensive workflow documentation, see [CI/CD Workflows Guide](cicd-workflows.md).
+
 ### Running CI Tests Locally
 
 #### Simulate PR Checks

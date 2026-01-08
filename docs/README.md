@@ -45,6 +45,8 @@ Contributing to WVA:
 
 - **[Development Setup](developer-guide/development.md)** - Setting up your dev environment
 - **[Testing](developer-guide/testing.md)** - Running tests and CI workflows
+- **[CI/CD Workflows](developer-guide/cicd-workflows.md)** - Continuous Integration and Deployment workflows
+- **[Release Process](developer-guide/releasing.md)** - Release procedures and checklist
 - **[Agentic Workflows](developer-guide/agentic-workflows.md)** - AI-powered automation workflows
 - **[Debugging](developer-guide/debugging.md)** - Debugging techniques and tools
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
