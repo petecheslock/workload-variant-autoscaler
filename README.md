@@ -162,10 +162,16 @@ helm upgrade workload-variant-autoscaler ./charts/workload-variant-autoscaler \
   [your-values...]
 ```
 
-### Breaking Changes
+### Version History & Breaking Changes
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and migration guides.
 
 #### v0.5.0 (upcoming)
 - **VariantAutoscaling CRD**: Added `scaleTargetRef` field to explicitly specify the target deployment. If not set, the controller infers the target from the `modelID` field.
+
+#### v0.4.0 (current)
+- **Metrics Collection V2**: Legacy v1 collector removed, v2 is now default (see [migration guide](CHANGELOG.md#from-03x-to-040))
+- No breaking changes to CRDs or user-facing configuration
 
 ### Verifying CRD Version
 

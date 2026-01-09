@@ -35,7 +35,33 @@ Guide for developers contributing to Workload-Variant-Autoscaler.
    make kustomize
    ```
 
-## Project Structure
+## Recent Changes
+
+### Metrics Collection V2 (v0.4.0, PR #558)
+
+**What Changed:**
+- The legacy v1 `MetricsCollector` interface has been **removed**
+- V2 collector infrastructure is now the **default and only** metrics collection system
+- `COLLECTOR_V2` environment variable is no longer needed or used
+
+**Benefits:**
+- Cleaner architecture with better separation of concerns
+- Improved caching and staleness handling
+- Better testability with `MetricsSource` abstraction
+- Automatic metric staleness filtering (no manual cache invalidation)
+
+**For Developers:**
+- See [Metrics Collection V2 Documentation](metrics-collection-v2.md) for complete details
+- Tests no longer need to handle v1/v2 conditional logic
+- Mock implementations use `NoOpSource` for testing without metrics
+
+**Migration Guide:**
+If you have custom code that references the old collector:
+- Replace `collector.MetricsCollector` with `collectorv2.MetricsSource`
+- Use `collectorv2.NewPrometheusSource()` instead of `collector.NewMetricsCollector()`
+- Remove any `COLLECTOR_V2` environment variable checks
+
+## Architecture Overview
 
 ```bash
 workload-variant-autoscaler/
@@ -53,10 +79,15 @@ workload-variant-autoscaler/
 ├── docs/                  # Documentation
 ├── internal/              # Private application code
 │   ├── controller/       # Controller implementation
-│   ├── collector/        # Metrics collection
-│   ├── optimizer/        # Optimization logic
-│   ├── actuator/         # Metric emission & scaling
-│   └── modelanalyzer/    # Model analysis
+│   ├── collector/        # Metrics collection (v2 architecture)
+│   │   ├── v2/          # V2 collector infrastructure (active)
+│   │   └── prometheus/  # Legacy Prometheus collector (deprecated)
+│   ├── engines/         # Optimization engines
+│   │   └── saturation/  # Saturation-based scaling engine
+│   ├── saturation/      # Saturation analysis logic
+│   ├── optimizer/       # Optimization logic
+│   ├── actuator/        # Metric emission & scaling
+│   └── interfaces/      # Shared interfaces
 ├── pkg/                   # Public libraries
 │   ├── analyzer/         # Queue theory models
 │   ├── solver/           # Optimization algorithms

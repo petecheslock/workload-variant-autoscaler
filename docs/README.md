@@ -45,6 +45,7 @@ Contributing to WVA:
 
 - **[Development Setup](developer-guide/development.md)** - Setting up your dev environment
 - **[Testing](developer-guide/testing.md)** - Running tests and CI workflows
+- **[Metrics Collection Architecture (V2)](developer-guide/metrics-collection-v2.md)** - Understanding the v2 metrics collection system
 - **[Agentic Workflows](developer-guide/agentic-workflows.md)** - AI-powered automation workflows
 - **[Debugging](developer-guide/debugging.md)** - Debugging techniques and tools
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project

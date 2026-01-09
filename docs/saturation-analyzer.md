@@ -21,23 +21,30 @@ The Saturation Analyzer is a **fast, reactive, and safe saturation guardrail** t
 
 ### Components
 
-**1. Saturation Analyzer (`internal/capacity/analyzer.go`)**
+**1. Saturation Analyzer (`internal/saturation/analyzer.go`)**
 - Core analysis logic for saturation-based scaling decisions
 - Implements spare capacity calculations
 - Performs worst-case scale-down safety simulation
 - Makes **per-variant** scaling decisions with cost-awareness
 - Supports capacity-only mode and hybrid mode with model-based optimization
 
-**2. Metrics Collector (`internal/collector/capacity_metrics.go`)**
-- Collects vLLM metrics from Prometheus using `max_over_time[1m]` queries
+**2. Saturation Engine (`internal/engines/saturation/engine.go`)**
+- Orchestrates the saturation-based scaling workflow
+- Coordinates metrics collection, analysis, and decision application
+- Runs periodic optimization loops
+- Manages engine lifecycle and configuration updates
+
+**3. Metrics Collector (`internal/engines/saturation/metrics/replica_metrics.go`)**
+- Collects vLLM metrics from Prometheus using the v2 collector infrastructure
+- Uses `internal/collector/v2` for metrics source abstraction
 - Queries `constants.VLLMKvCacheUsagePerc` and `constants.VLLMNumRequestsWaiting`
-- Uses peak values over 1 minute for safety-first capacity analysis
+- Implements metric staleness filtering (default: 2 minutes threshold)
 - Enriches metrics with pod metadata (variant name, accelerator type)
 
-**3. Interfaces (`internal/interfaces/capacity_analyzer.go`)**
+**4. Interfaces (`internal/interfaces/saturation_analyzer.go`)**
 - Defines data structures for replica metrics (including variant cost)
 - Defines analysis results and per-variant decision types
-- Provides interface for capacity analysis
+- Provides interface for saturation analysis
 - Defines `VariantDecision` for per-variant scaling decisions
 - Defines `VariantReplicaState` for current/desired replica tracking
 
@@ -49,15 +56,23 @@ The Saturation Analyzer is a **fast, reactive, and safe saturation guardrail** t
 └──────┬──────┘
        │ vLLM metrics (KV cache, queue length)
        ↓
-┌──────────────────┐
-│ MetricsCollector │
-└────────┬─────────┘
+┌───────────────────────────┐
+│ V2 Metrics Collector      │
+│ (PrometheusSource)        │
+└────────┬──────────────────┘
+         │ MetricResults (cached, with staleness filtering)
+         ↓
+┌─────────────────────────────────┐
+│ ReplicaMetricsCollector         │
+│ (saturation/metrics)            │
+└────────┬────────────────────────┘
          │ ReplicaMetrics[] (with cost)
          ↓
 ┌──────────────────────────┐
-│ AnalyzeModelCapacity     │  ← CapacityScalingConfig
+│ AnalyzeModelCapacity     │  ← SaturationScalingConfig
+│ (saturation/analyzer.go) │
 └────────┬─────────────────┘
-         │ ModelCapacityAnalysis (with per-variant breakdown)
+         │ ModelSaturationAnalysis (with per-variant breakdown)
          ↓
 ┌─────────────────────────────┐
 │ STEP 1: CalculateCapacityTargets  │  ← VariantReplicaState[] (current/desired from CRD)
