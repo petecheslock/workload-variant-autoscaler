@@ -187,6 +187,7 @@ func (r *VariantAutoscalingReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Process Engine Decisions from Shared Cache
 	// This mechanism allows the Engine to trigger updates without touching the API server directly.
 	if decision, ok := common.DecisionCache.Get(va.Name, va.Namespace); ok {
+		logger.Info("Found decision in cache", "va", va.Name, "namespace", va.Namespace, "metricsAvailable", decision.MetricsAvailable)
 		// Only apply if the decision is fresher than the last one applied or if we haven't applied it
 		// Note: We blindly apply for now, assuming the Engine acts as the source of truth for "Desired" state
 		numReplicas, accelerator, lastRunTime := common.DecisionToOptimizedAlloc(decision)
@@ -209,7 +210,7 @@ func (r *VariantAutoscalingReconciler) Reconcile(ctx context.Context, req ctrl.R
 		// Note: CurrentAlloc is removed from Status.
 		// Internal allocation state is managed by the Engine and Actuator.
 	} else {
-		logger.V(logging.DEBUG).Info("No decision found in cache for VA", "variant", va.Name)
+		logger.Info("No decision found in cache for VA", "va", va.Name, "namespace", va.Namespace)
 	}
 
 	// Update Status if we have changes (Conditions or OptimizedAlloc)
