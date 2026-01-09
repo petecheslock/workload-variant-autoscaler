@@ -518,8 +518,8 @@ func (e *Engine) applySaturationDecisions(
 			llmdVariantAutoscalingV1alpha1.SetCondition(&updateVa,
 				llmdVariantAutoscalingV1alpha1.TypeMetricsAvailable,
 				metav1.ConditionTrue,
-				"MetricsCollected",
-				"Saturation metrics are being collected from Prometheus")
+				"MetricsAvailable",
+				"Saturation metrics data is available for scaling decisions")
 		} else {
 			llmdVariantAutoscalingV1alpha1.SetCondition(&updateVa,
 				llmdVariantAutoscalingV1alpha1.TypeMetricsAvailable,
