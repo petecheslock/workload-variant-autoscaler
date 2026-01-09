@@ -45,6 +45,14 @@ import (
 	"github.com/llm-d-incubation/workload-variant-autoscaler/internal/utils"
 )
 
+// Constants for MetricsAvailable condition
+const (
+	MetricsReasonAvailable   = "MetricsAvailable"
+	MetricsReasonUnavailable = "MetricsUnavailable"
+	MetricsMessageAvailable  = "Saturation metrics data is available for scaling decisions"
+	MetricsMessageUnavailable = "No saturation metrics available - pods may not be ready or metrics not yet scraped"
+)
+
 type Engine struct {
 	client   client.Client
 	scheme   *runtime.Scheme
@@ -550,8 +558,8 @@ func (e *Engine) applySaturationDecisions(
 				VariantName:      vaName,
 				Namespace:        va.Namespace,
 				MetricsAvailable: false,
-				MetricsReason:    "MetricsUnavailable",
-				MetricsMessage:   "No saturation metrics available - pods may not be ready or metrics not yet scraped",
+				MetricsReason:    MetricsReasonUnavailable,
+				MetricsMessage:   MetricsMessageUnavailable,
 			})
 			// Trigger reconciler to apply the condition
 			common.DecisionTrigger <- event.GenericEvent{
@@ -633,13 +641,18 @@ func (e *Engine) applySaturationDecisions(
 		// This avoids any API server interaction from the Engine.
 
 		// 1. Update Cache
-		// Determine MetricsAvailable status for the cache
+		// Determine MetricsAvailable status for the cache.
+		// - hasAllocation is true when we successfully collected current replica metrics
+		//   for this variant during this loop (metrics pipeline is working).
+		// - hasDecision is true when the optimizer produced a scaling decision based on
+		//   saturation metrics in this run.
+		// Either condition implies saturation metrics were available and usable.
 		metricsAvailable := hasAllocation || hasDecision
-		metricsReason := "MetricsUnavailable"
-		metricsMessage := "No saturation metrics available - pods may not be ready or metrics not yet scraped"
+		metricsReason := MetricsReasonUnavailable
+		metricsMessage := MetricsMessageUnavailable
 		if metricsAvailable {
-			metricsReason = "MetricsAvailable"
-			metricsMessage = "Saturation metrics data is available for scaling decisions"
+			metricsReason = MetricsReasonAvailable
+			metricsMessage = MetricsMessageAvailable
 		}
 
 		common.DecisionCache.Set(va.Name, va.Namespace, interfaces.VariantDecision{
