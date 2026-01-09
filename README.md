@@ -64,6 +64,10 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 - [CRD Reference](docs/user-guide/crd-reference.md)
 - [Multi-Controller Isolation](docs/user-guide/multi-controller-isolation.md)
 
+### Operations & Monitoring
+- [Metrics Health Monitoring](docs/metrics-health-monitoring.md) - Status conditions and troubleshooting
+- [Prometheus Metrics](docs/integrations/prometheus.md)
+
 <!-- 
 
 ### Tutorials
@@ -74,7 +78,6 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 ### Integrations
 - [HPA Integration](docs/integrations/hpa-integration.md)
 - [KEDA Integration](docs/integrations/keda-integration.md)
-- [Prometheus Metrics](docs/integrations/prometheus.md)
 
 <!-- 
 

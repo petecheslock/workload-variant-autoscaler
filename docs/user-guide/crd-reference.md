@@ -128,3 +128,70 @@ _Appears in:_
 | `conditions` _[Condition](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#condition-v1-meta) array_ | Conditions represent the latest available observations of the VariantAutoscaling's state |  | Optional: \{\} <br /> |
 
 
+## Status Conditions
+
+WVA uses standard Kubernetes conditions to report the health and state of each VariantAutoscaling resource.
+
+### Condition Types
+
+#### MetricsAvailable
+
+Indicates whether vLLM metrics are available from Prometheus for this variant.
+
+**Status Values:**
+- `True`: Metrics data is available
+- `False`: No metrics available (pods not ready or metrics not scraped)
+
+**Common Reasons:**
+- `MetricsAvailable`: Saturation metrics data is available for scaling decisions
+- `MetricsUnavailable`: No saturation metrics available
+
+**Example:**
+```yaml
+conditions:
+- type: MetricsAvailable
+  status: "True"
+  reason: MetricsAvailable
+  message: "Saturation metrics data is available for scaling decisions"
+  lastTransitionTime: "2026-01-09T22:00:00Z"
+```
+
+#### OptimizationReady
+
+Indicates whether the optimization engine ran successfully.
+
+**Status Values:**
+- `True`: Optimization completed
+- `False`: Optimization failed or cannot run
+
+**Common Reasons:**
+- `OptimizationSucceeded`: Optimization completed successfully
+- `SaturationOnlyMode`: Operating in saturation-only mode
+- `SaturationSafetyOverride`: Saturation safety override applied
+
+**Example:**
+```yaml
+conditions:
+- type: OptimizationReady
+  status: "True"
+  reason: OptimizationSucceeded
+  message: "Hybrid mode: scale-up decision (target: 3 replicas)"
+  lastTransitionTime: "2026-01-09T22:00:00Z"
+```
+
+### Viewing Conditions
+
+```bash
+# Quick view with MetricsReady column
+kubectl get variantautoscaling -A
+
+# Detailed condition information
+kubectl describe variantautoscaling <name> -n <namespace>
+
+# Extract conditions as JSON
+kubectl get variantautoscaling <name> -n <namespace> -o jsonpath='{.status.conditions}' | jq
+```
+
+For comprehensive information on metrics health monitoring and troubleshooting, see [Metrics Health Monitoring](../metrics-health-monitoring.md).
+
+

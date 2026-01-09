@@ -135,6 +135,40 @@ query := fmt.Sprintf(`vllm_kv_cache_usage{namespace="%s"}`, escapedNamespace)
 **Documentation:**
 - [Prometheus Integration - PromQL Injection Prevention](integrations/prometheus.md#promql-injection-prevention)
 
+## Bug Fixes
+
+### MetricsAvailable Condition Always Set in Status (PR #567)
+
+**Problem:**
+The `MetricsAvailable` condition was not consistently appearing in VariantAutoscaling status, making it difficult for operators to diagnose metrics collection issues.
+
+**Root Cause:**
+The condition was being set on a local VA object that was never persisted to the API server. The condition needed to flow through the DecisionCache to reach the controller.
+
+**Solution:**
+- Added `MetricsAvailable`, `MetricsReason`, and `MetricsMessage` fields to `VariantDecision` struct
+- Engine populates these fields in the decision cache based on whether metrics data is available
+- Controller reads from cache and sets the condition on VA status
+- Condition is now set even when pods aren't ready yet (MetricsAvailable=False with helpful message)
+
+**Behavior:**
+- **MetricsAvailable=True**: Metrics data is available (allocation from metrics collection OR decision from saturation analysis)
+- **MetricsAvailable=False**: No metrics available - pods may not be ready or metrics not yet scraped
+
+**Constants Extracted:**
+- `MetricsReasonAvailable` / `MetricsReasonUnavailable`
+- `MetricsMessageAvailable` / `MetricsMessageUnavailable`
+
+**Benefits:**
+- ✅ Operators can always see metrics availability status
+- ✅ Clear diagnostic messages for troubleshooting
+- ✅ Consistent condition reporting across all scenarios
+- ✅ Better visibility into controller state
+
+**Documentation:**
+- [Metrics Health Monitoring](metrics-health-monitoring.md)
+- [CRD Reference - Conditions](user-guide/crd-reference.md)
+
 ## Minor Improvements
 
 ### Helper Functions
@@ -205,7 +239,9 @@ E2E tests updated:
 ## References
 
 - PR #549: https://github.com/llm-d-incubation/workload-variant-autoscaler/pull/549
+- PR #567: https://github.com/llm-d-incubation/workload-variant-autoscaler/pull/567
 - Commit: 14e2bd88 - fix: pending-aware scaling and E2E test stability improvements
+- Commit: 2963cc73 - fix: always set MetricsAvailable condition in VA status
 
 ---
 
