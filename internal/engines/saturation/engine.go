@@ -553,7 +553,10 @@ func (e *Engine) applySaturationDecisions(
 		if acceleratorName == "" {
 			logger.Info("Skipping status update for VA without accelerator info, but setting MetricsAvailable=False",
 				"variant", vaName, "cacheKey.name", va.Name, "cacheKey.namespace", va.Namespace)
-			// Still set the cache entry so the controller can set MetricsAvailable=False
+			// Still set the cache entry so the controller can set MetricsAvailable=False.
+			// This is a partial decision for metrics status only - other fields like
+			// TargetReplicas and AcceleratorName are left at zero values since we don't
+			// have enough information to set them.
 			common.DecisionCache.Set(va.Name, va.Namespace, interfaces.VariantDecision{
 				VariantName:      vaName,
 				Namespace:        va.Namespace,
