@@ -98,28 +98,17 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 WVA consists of several key components:
 
 - **Reconciler**: Kubernetes controller that manages VariantAutoscaling resources
-- **Collector**: Gathers cluster state and vLLM server metrics
-<!-- 
-- **Model Analyzer**: Performs per-model analysis using queueing theory
-- **Optimizer**: Makes global scaling decisions across models
--->
-- **Optimizer**: Capacity model provides saturation based scaling based on threshold
-- **Actuator**: Emits metrics to Prometheus and updates deployment replicas
+- **Collector**: Gathers cluster state and vLLM server metrics from Prometheus
+- **Saturation Analyzer**: Analyzes KV cache and queue metrics to determine optimal replica counts
+- **Actuator**: Emits scaling metrics to Prometheus and updates VariantAutoscaling status
 
-<!-- 
-For detailed architecture information, see the [design documentation](docs/design/modeling-optimization.md).
--->
 ## How It Works
 
 1. Platform admin deploys llm-d infrastructure (including model servers) and waits for servers to warm up and start serving requests
 2. Platform admin creates a `VariantAutoscaling` CR for the running deployment
-3. WVA continuously monitors request rates and server performance via Prometheus metrics
-<!-- 
-4. Model Analyzer estimates latency and throughput using queueing models
-5. Optimizer solves for minimal cost allocation meeting all SLOs
--->
-4. Capacity model obtains KV cache utilization and queue depth of inference servers with slack capacity to determine replicas
-5. Actuator emits optimization metrics to Prometheus and updates VariantAutoscaling status
+3. WVA continuously monitors vLLM server performance via Prometheus metrics (KV cache usage, queue depth)
+4. Saturation analyzer calculates spare capacity and determines when to scale up or down
+5. Actuator emits scaling metrics to Prometheus and updates VariantAutoscaling status
 6. External autoscaler (HPA/KEDA) reads the metrics and scales the deployment accordingly
 
 **Important Notes**:

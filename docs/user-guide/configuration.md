@@ -140,23 +140,30 @@ env:
     value: "false"
 ```
 
-### HYBRID Mode (Experimental)
+### Saturation-Based Scaling (Current Implementation)
 
-**Not recommended for production.**
+WVA currently operates exclusively in **saturation-based scaling mode**, which provides fast, reactive autoscaling based on live vLLM metrics.
 
-- **Behavior**: Combines saturation analyzer with model-based optimizer
+- **Behavior**: Uses KV cache utilization and queue depth metrics for scaling decisions
 - **How It Works**:
-  1. Runs saturation analyzer for saturation detection
-  2. Runs model-based optimizer for proactive scaling
-  3. Arbitrates between the two (capacity safety overrides)
-- **Pros**: Proactive scaling (can scale before saturation)
-- **Cons**: Slower (~60s), requires model training, experimental
+  1. Monitors vLLM metrics from Prometheus (KV cache usage, queue length)
+  2. Calculates spare capacity across non-saturated replicas
+  3. Triggers scale-up proactively when spare capacity falls below threshold
+  4. Performs safe scale-down with worst-case load redistribution simulation
+- **Pros**: Fast (~10-15s), no model training required, production-ready
+- **Cons**: Reactive (scales after load increases, not predictive)
 
-**Enable:**
+**Configuration:**
+Saturation thresholds are configured via ConfigMap. See [Saturation Scaling Configuration](../saturation-scaling-config.md) for details.
+
 ```yaml
-env:
-  - name: EXPERIMENTAL_PROACTIVE_MODEL
-    value: "true"
+# ConfigMap: saturation-scaling-config
+data:
+  default: |
+    kvCacheThreshold: 0.80        # Scale up when KV cache > 80%
+    queueLengthThreshold: 5       # Scale up when queue > 5 requests
+    kvSpareTrigger: 0.10         # Proactive scale-up threshold
+    queueSpareTrigger: 3         # Proactive scale-up threshold
 ```
 
 **Recommendation:** Stick with CAPACITY-ONLY mode unless you have specific proactive scaling requirements.
@@ -277,7 +284,7 @@ spec:
 **Behavior:**
 - Saturation analyzer uses `variantCost` when deciding which variant to scale
 - If costs are equal, chooses variant with most available capacity
-- Does not affect model-based optimization (uses accelerator unit costs)
+- Lower-cost variants are preferred for scale-up; higher-cost variants are scaled down first
 
 ### Advanced Options
 
