@@ -29,12 +29,15 @@ Integration with other systems:
 - **[HPA Integration](integrations/hpa-integration.md)** - Using WVA with Horizontal Pod Autoscaler
 - **[KEDA Integration](integrations/keda-integration.md)** - Using WVA with KEDA
 - **[Prometheus Integration](integrations/prometheus.md)** - Custom metrics and monitoring
+- **[Metrics Health Monitoring](metrics-health-monitoring.md)** - Metrics availability validation and status conditions
 
 ### Design & Architecture
 
 Understanding how WVA works:
 
 - **[Modeling & Optimization](design/modeling-optimization.md)** - Queue theory models and optimization algorithms
+- **[Saturation Analyzer](saturation-analyzer.md)** - Fast reactive saturation guardrail and capacity monitoring
+- **[Saturation Scaling Configuration](saturation-scaling-config.md)** - ConfigMap-based saturation scaling settings
 - **[Controller Behavior](design/controller-behavior.md)** - Event handling and reconciliation behavior
 - **[Architecture Limitations](design/architecture-limitations.md)** - **Important:** Model architecture assumptions and limitations (READ THIS if using HSSM, MoE, or non-standard architectures)
 - **[Architecture Diagrams](design/diagrams/)** - System architecture and workflows
@@ -45,9 +48,14 @@ Contributing to WVA:
 
 - **[Development Setup](developer-guide/development.md)** - Setting up your dev environment
 - **[Testing](developer-guide/testing.md)** - Running tests and CI workflows
+- **[Pod Scraping Source](developer-guide/pod-scraping-source.md)** - Direct pod metrics scraping for inference pools
 - **[Agentic Workflows](developer-guide/agentic-workflows.md)** - AI-powered automation workflows
 - **[Debugging](developer-guide/debugging.md)** - Debugging techniques and tools
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
+
+## Release Notes
+
+- **[Changelog v0.5.0](CHANGELOG-v0.5.0.md)** - Latest release notes with breaking changes and new features
 
 ## Quick Links
 

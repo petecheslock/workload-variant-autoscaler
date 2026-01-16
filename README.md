@@ -98,7 +98,7 @@ See the [Installation Guide](docs/user-guide/installation.md) for detailed instr
 WVA consists of several key components:
 
 - **Reconciler**: Kubernetes controller that manages VariantAutoscaling resources
-- **Collector**: Gathers cluster state and vLLM server metrics
+- **Collector**: Gathers cluster state and vLLM server metrics via Prometheus queries or direct pod scraping
 <!-- 
 - **Model Analyzer**: Performs per-model analysis using queueing theory
 - **Optimizer**: Makes global scaling decisions across models
