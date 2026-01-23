@@ -152,8 +152,6 @@ All custom metrics are prefixed with `inferno_` and include labels for `variant_
 *No optimization metrics are currently exposed. Optimization timing is logged at DEBUG level.*
 
 ### Replica Management Metrics
-
-### `wva_current_replicas`
 - **Type**: Gauge
 - **Description**: Current number of replicas for each variant
 - **Labels**:
@@ -162,7 +160,7 @@ All custom metrics are prefixed with `inferno_` and include labels for `variant_
   - `accelerator_type`: Type of accelerator being used
 - **Use Case**: Monitor current number of replicas per variant
 
-### `wva_desired_replicas`
+### `inferno_desired_replicas`
 - **Type**: Gauge
 - **Description**: Desired number of replicas for each variant
 - **Labels**:
@@ -171,7 +169,7 @@ All custom metrics are prefixed with `inferno_` and include labels for `variant_
   - `accelerator_type`: Type of accelerator being used
 - **Use Case**: Expose the desired optimized number of replicas per variant
 
-### `wva_desired_ratio`
+### `inferno_desired_ratio`
 - **Type**: Gauge
 - **Description**: Ratio of the desired number of replicas and the current number of replicas for each variant
 - **Labels**:
@@ -180,7 +178,7 @@ All custom metrics are prefixed with `inferno_` and include labels for `variant_
   - `accelerator_type`: Type of accelerator being used
 - **Use Case**: Compare the desired and current number of replicas per variant, for scaling purposes
 
-### `wva_replica_scaling_total`
+### `inferno_replica_scaling_total`
 - **Type**: Counter
 - **Description**: Total number of replica scaling operations
 - **Labels**:
@@ -222,23 +220,23 @@ spec:
 ### Basic Queries
 ```promql
 # Current replicas by variant
-wva_current_replicas
+inferno_current_replicas
 
 # Scaling frequency
-rate(wva_replica_scaling_total[5m])
+rate(inferno_replica_scaling_total[5m])
 
 # Desired replicas by variant
-wva_desired_replicas
+inferno_desired_replicas
 ```
 
 ### Advanced Queries
 ```promql
 # Scaling frequency by direction
-rate(wva_replica_scaling_total{direction="scale_up"}[5m])
+rate(inferno_replica_scaling_total{direction="scale_up"}[5m])
 
 # Replica count mismatch
-abs(wva_desired_replicas - wva_current_replicas)
+abs(inferno_desired_replicas - inferno_current_replicas)
 
 # Scaling frequency by reason
-rate(wva_replica_scaling_total[5m]) by (reason)
+rate(inferno_replica_scaling_total[5m]) by (reason)
 ```

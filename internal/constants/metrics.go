@@ -54,25 +54,25 @@ const (
 	VLLMNumRequestsWaiting = "vllm:num_requests_waiting"
 )
 
-// WVA Output Metrics
-// These metric names are used to emit WVA (Workload Variant Autoscaler) metrics to Prometheus.
+// Inferno Output Metrics
+// These metric names are used to emit Inferno autoscaler metrics to Prometheus.
 // The metrics expose scaling decisions and current state for monitoring and alerting.
 const (
-	// WVAReplicaScalingTotal is a counter that tracks the total number of scaling operations.
+	// InfernoReplicaScalingTotal is a counter that tracks the total number of scaling operations.
 	// Labels: variant_name, namespace, direction (up/down), reason, accelerator_type
-	WVAReplicaScalingTotal = "wva_replica_scaling_total"
+	InfernoReplicaScalingTotal = "inferno_replica_scaling_total"
 
-	// WVADesiredReplicas is a gauge that tracks the desired number of replicas.
+	// InfernoDesiredReplicas is a gauge that tracks the desired number of replicas.
 	// Labels: variant_name, namespace, accelerator_type
-	WVADesiredReplicas = "wva_desired_replicas"
+	InfernoDesiredReplicas = "inferno_desired_replicas"
 
-	// WVACurrentReplicas is a gauge that tracks the current number of replicas.
+	// InfernoCurrentReplicas is a gauge that tracks the current number of replicas.
 	// Labels: variant_name, namespace, accelerator_type
-	WVACurrentReplicas = "wva_current_replicas"
+	InfernoCurrentReplicas = "inferno_current_replicas"
 
-	// WVADesiredRatio is a gauge that tracks the ratio of desired to current replicas.
+	// InfernoDesiredRatio is a gauge that tracks the ratio of desired to current replicas.
 	// Labels: variant_name, namespace, accelerator_type
-	WVADesiredRatio = "wva_desired_ratio"
+	InfernoDesiredRatio = "inferno_desired_ratio"
 )
 
 // Metric Label Names

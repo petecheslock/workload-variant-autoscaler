@@ -125,17 +125,17 @@ When `CONTROLLER_INSTANCE` is set, all emitted metrics include a `controller_ins
 
 ```promql
 # Without controller instance isolation
-wva_desired_replicas{variant_name="llama-8b",namespace="llm-d",accelerator_type="H100"}
+inferno_desired_replicas{variant_name="llama-8b",namespace="llm-d",accelerator_type="H100"}
 
 # With controller instance isolation  
-wva_desired_replicas{variant_name="llama-8b",namespace="llm-d",accelerator_type="H100",controller_instance="my-instance-id"}
+inferno_desired_replicas{variant_name="llama-8b",namespace="llm-d",accelerator_type="H100",controller_instance="my-instance-id"}
 ```
 
 Affected metrics:
-- `wva_replica_scaling_total`
-- `wva_desired_replicas`
-- `wva_current_replicas`
-- `wva_desired_ratio`
+- `inferno_replica_scaling_total`
+- `inferno_desired_replicas`
+- `inferno_current_replicas`
+- `inferno_desired_ratio`
 
 ### VA Resource Filtering
 
@@ -162,7 +162,7 @@ spec:
   - type: Pods
     pods:
       metric:
-        name: wva_desired_replicas
+        name: inferno_desired_replicas
         selector:
           matchLabels:
             variant_name: "llama-8b"
@@ -224,15 +224,15 @@ Query metrics for specific controller instances:
 
 ```promql
 # Check desired replicas for specific controller instance
-wva_desired_replicas{controller_instance="prod"}
+inferno_desired_replicas{controller_instance="prod"}
 
 # Compare scaling events across instances
 sum by (controller_instance, direction) (
-  rate(wva_replica_scaling_total[5m])
+  rate(inferno_replica_scaling_total[5m])
 )
 
 # Alert on missing controller instance metrics
-absent(wva_current_replicas{controller_instance="prod"})
+absent(inferno_current_replicas{controller_instance="prod"})
 ```
 
 ### Cleanup
@@ -292,7 +292,7 @@ kubectl delete hpa -l wva.llmd.ai/controller-instance=instance-a
 
 2. Verify metrics exist with expected labels:
    ```promql
-   wva_desired_replicas{
+   inferno_desired_replicas{
      variant_name="llama-8b",
      controller_instance="my-instance-id"
    }

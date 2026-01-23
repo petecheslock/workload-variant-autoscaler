@@ -537,7 +537,7 @@ spec:
   - type: External
     external:
       metric:
-        name: wva_desired_replicas
+        name: inferno_desired_replicas
         selector:
           matchLabels:
             variant_name: my-vllm-deployment-decode
@@ -715,7 +715,7 @@ kubectl port-forward -n <monitoring-namespace> svc/prometheus-k8s 9090:9090
 kubectl logs -n workload-variant-autoscaler-system -l app.kubernetes.io/name=workload-variant-autoscaler | grep "Collected metrics"
 
 # 4. Verify external metrics API (if using HPA)
-kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/<namespace>/wva_desired_replicas" | jq
+kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/<namespace>/inferno_desired_replicas" | jq
 ```
 
 ### Monitoring WVA
@@ -805,7 +805,7 @@ watch kubectl get hpa -n <namespace>
 watch kubectl get pods -n <namespace>
 
 # Watch external metrics
-watch 'kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/<namespace>/wva_desired_replicas" | jq'
+watch 'kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/<namespace>/inferno_desired_replicas" | jq'
 ```
 
 ## Troubleshooting
@@ -911,14 +911,14 @@ my-hpa     Deployment/vllm    <unknown>/1(avg)   1         10        1
 kubectl describe hpa <name> -n <namespace>
 
 # Check external metrics API on the specified namespace
-kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/<your-namespace>/wva_desired_replicas" | jq
+kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/<your-namespace>/inferno_desired_replicas" | jq
 
 # Check Prometheus Adapter logs
 kubectl logs -n <monitoring-namespace> deployment/prometheus-adapter
 
 # Check if WVA is emitting the metric
 kubectl logs -n workload-variant-autoscaler-system -l app.kubernetes.io/name=workload-variant-autoscaler | \
-  grep "wva_desired_replicas"
+  grep "inferno_desired_replicas"
 ```
 
 **Common causes**:
@@ -939,7 +939,7 @@ kubectl get configmap prometheus-adapter -n <monitoring-namespace> -o yaml
 
 # Verify metric exists in Prometheus
 kubectl port-forward -n <monitoring-namespace> svc/prometheus-k8s 9090:9090
-# Query: wva_desired_replicas{variant_name="<name>"}
+# Query: inferno_desired_replicas{variant_name="<name>"}
 ```
 
 ### Getting Help

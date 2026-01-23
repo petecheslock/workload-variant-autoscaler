@@ -49,28 +49,28 @@ func InitMetrics(registry prometheus.Registerer) error {
 
 	replicaScalingTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: constants.WVAReplicaScalingTotal,
+			Name: constants.InfernoReplicaScalingTotal,
 			Help: "Total number of replica scaling operations",
 		},
 		scalingLabels,
 	)
 	desiredReplicas = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: constants.WVADesiredReplicas,
+			Name: constants.InfernoDesiredReplicas,
 			Help: "Desired number of replicas for each variant",
 		},
 		baseLabels,
 	)
 	currentReplicas = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: constants.WVACurrentReplicas,
+			Name: constants.InfernoCurrentReplicas,
 			Help: "Current number of replicas for each variant",
 		},
 		baseLabels,
 	)
 	desiredRatio = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: constants.WVADesiredRatio,
+			Name: constants.InfernoDesiredRatio,
 			Help: "Ratio of the desired number of replicas and the current number of replicas for each variant",
 		},
 		baseLabels,
