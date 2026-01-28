@@ -8,7 +8,7 @@ The Saturation Analyzer is a **fast, reactive, and safe saturation guardrail** t
 - ✅ Operates from live vLLM metrics (no offline profiling required)
 - ✅ Detects imminent capacity exhaustion (KV-cache or request queue)
 - ✅ Makes **per-variant** target replica calculations with cost-awareness
-- ✅ Uses ready replicas (those reporting metrics) to avoid excessive scale-up
+- ✅ Includes pending replicas to avoid excessive scale-up
 - ✅ Analyzes capacity across all variants of the same model
 
 ## Analysis Algorithm
@@ -90,36 +90,35 @@ For each variant, determines target replicas based on **capacity needs**:
 | Capacity allows scale-down | **Most expensive** variant: readyReplicas - 1 | Cost-optimized capacity reduction (deterministic: alphabetically last variant on tie) |
 | Otherwise | target = readyReplicas | No capacity action needed |
 
-**Note:** `readyReplicas` = number of replicas reporting capacity metrics. This prevents excessive scale-up when replicas are still starting up.
+**Note:** `readyReplicas` = number of replicas reporting capacity metrics. Pending replicas (those still starting up) are included to avoid excessive scale-up.
 
 **Example:**
 ```
 Model: llama-70b
 Variants:
-  - v1-l4 (cost=$5): current=2, ready=2 → target=3 (cheapest, scaled up for capacity)
-  - v2-a100 (cost=$20): current=4, ready=3 → target=3 (most expensive, stays at ready count)
+  - v1-l4 (cost=5): current=2, ready=2 → target=3 (cheapest, scaled up for capacity)
+  - v2-a100 (cost=20): current=4, ready=3 → target=3 (most expensive, stays at ready count)
 
 Note: v2-a100 has 4 current replicas but only 3 are ready (reporting metrics).
 ```
 
 **Key Principles:**
-1. **Ready replicas only**: Use replicas reporting metrics to avoid scaling up for not-yet-ready pods
-2. **Cost-aware selection**: Cheapest variant for scale-up, most expensive for scale-down
-3. **Deterministic tie-breaking**: When variants have equal costs, alphabetically first for scale-up, last for scale-down
+1. **Cost-aware selection**: Cheapest variant for scale-up, most expensive for scale-down
+2. **Deterministic tie-breaking**: When variants have equal costs, alphabetically first for scale-up, last for scale-down
 
 ## Multi-Variant Analysis
 
 The saturation analyzer aggregates metrics **across all variants of the same model**:
 
 **Example: Model "llama-70b" with 2 variants**
-- variant-1 (A100, cost: $20, 2 replicas)
-- variant-2 (H100, cost: $15, 3 replicas)
+- variant-1 (A100, cost: 20, 2 replicas)
+- variant-2 (H100, cost: 15, 3 replicas)
 
 The analyzer aggregates across all 5 replicas and provides per-variant breakdown with cost information.
 
 **Decision example:**
-- If capacity needs scale-up: variant-2 (H100) will be scaled up (cheaper at $15 vs $20)
-- If capacity allows scale-down: variant-1 (A100) will be scaled down (more expensive at $20)
+- If capacity needs scale-up: variant-2 (H100) will be scaled up (cheaper at 15 vs 20)
+- If capacity allows scale-down: variant-1 (A100) will be scaled down (more expensive at 20)
 
 ## Configuration
 
